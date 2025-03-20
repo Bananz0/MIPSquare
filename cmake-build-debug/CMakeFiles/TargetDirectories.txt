@@ -1,3 +1,0 @@
-E:/MIPSquare++/cmake-build-debug/CMakeFiles/MIPSquare__.dir
-E:/MIPSquare++/cmake-build-debug/CMakeFiles/edit_cache.dir
-E:/MIPSquare++/cmake-build-debug/CMakeFiles/rebuild_cache.dir
