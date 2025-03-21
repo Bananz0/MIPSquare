@@ -1,5 +1,3 @@
-#include <iostream>
-
 #define DEBUG 1
 #define DEBUG_VERBOSITY 0
 
@@ -12,6 +10,8 @@ that,
 #define CLOCK_FREQUENCY 1
 
 int main() {
-    Register r1(0), r2(1), r3(2), r4(3), r5(4);
+    Register zero(RegisterNumber::zero);
+    Register one(RegisterNumber::at);
+
     return 0;
 }

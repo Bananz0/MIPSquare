@@ -1,11 +1,15 @@
-#include <iostream>
-#include <string>
 #include <Register.h>
 
 #define REGISTER_DEBUG 1
 
+const std::string Register::registerNames[32] = {  // Define outside the class
+  "$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
+  "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
+  "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
+  "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"
+};
 
-Register::Register(const int registerNumberIn) : registerNumber(registerNumberIn) {
+Register::Register(const RegisterNumber registerNumberIn) : registerNumber(registerNumberIn) {
   setRegisterName();
 }
 
@@ -25,106 +29,13 @@ std::string Register::getRegisterName() {
 }
 
 void Register::setRegisterName() {
-  switch (registerNumber) {
-    case 0:
-      registerName = "$zero";
-      break;
-    case 1:
-      registerName = "$at";
-      break;
-    case 2:
-      registerName = "$v0";
-      break;
-    case 3:
-      registerName = "$v1";
-      break;
-    case 4:
-      registerName = "$a0";
-      break;
-    case 5:
-      registerName = "$a1";
-      break;
-    case 6:
-      registerName = "$a2";
-      break;
-    case 7:
-      registerName = "$a3";
-      break;
-    case 8:
-      registerName = "$t0";
-      break;
-    case 9:
-      registerName = "$t1";
-      break;
-    case 10:
-      registerName = "$t2";
-      break;
-    case 11:
-      registerName = "$t3";
-      break;
-    case 12:
-      registerName = "$t4";
-      break;
-    case 13:
-      registerName = "$t5";
-      break;
-    case 14:
-      registerName = "$t6";
-      break;
-    case 15:
-      registerName = "$t7";
-      break;
-    case 16:
-      registerName = "$s0";
-      break;
-    case 17:
-      registerName = "$s1";
-      break;
-    case 18:
-      registerName = "$s2";
-      break;
-    case 19:
-      registerName = "$s3";
-      break;
-    case 20:
-      registerName = "$s4";
-      break;
-    case 21:
-      registerName = "$s5";
-      break;
-    case 22:
-      registerName = "$s6";
-      break;
-    case 23:
-      registerName = "$s7";
-      break;
-    case 24:
-      registerName = "$t8";
-      break;
-    case 25:
-      registerName = "$t9";
-      break;
-    case 26:
-      registerName = "$k0";
-      break;
-    case 27:
-      registerName = "$k1";
-      break;
-    case 28:
-      registerName = "$gp";
-      break;
-    case 29:
-      registerName = "$sp";
-      break;
-    case 30:
-      registerName = "$fp";
-      break;
-    case 31:
-      registerName = "$ra";
-      break;
-    default:
-      registerName = "$uninitializedRegister";
-      std::cerr << "Unknown register number: " << registerNumber << "\n";
+  int regNum = static_cast<int>(registerNumber);
+  assert(regNum >= 0 && regNum < 32);
+  if ( regNum >= 0 && regNum < 32) {
+    registerName = registerNames[regNum];
+  } else {
+    registerName = "$uninitializedRegister";
+    std::cerr << "Unknown register number: " << regNum << "\n";
   }
   if constexpr (REGISTER_DEBUG) {
     std::cerr << "Initialized Register: " << registerName << "\n";
