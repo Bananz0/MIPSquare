@@ -8,8 +8,6 @@
 #include <string>
 #include <iostream>
 #include <cassert>
-#include <iostream>
-#include <string>
 
 enum class RegisterNumber {
     zero, at, v0, v1, a0, a1, a2, a3, t0, t1, t2, t3, t4, t5, t6, t7,
@@ -18,11 +16,11 @@ enum class RegisterNumber {
 
 class Register {
 public:
-    Register(RegisterNumber registerNumberIn);
+    explicit Register(RegisterNumber registerNumberIn);
 
     void setValue(int regIn); //Save the Value to the individual Register
-    int getValue() const; //Get the value from teh register
-    std::string getRegisterName();
+    [[nodiscard]] int getValue() const; //Get the value from teh register
+    [[nodiscard]] std::string getRegisterName() const;
 
 private:
     RegisterNumber registerNumber;

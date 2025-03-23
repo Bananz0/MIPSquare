@@ -2,7 +2,8 @@
 
 #define REGISTER_DEBUG 1
 
-const std::string Register::registerNames[32] = {  // Define outside the class
+const std::string Register::registerNames[32] = {
+  // Define outside the class
   "$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
   "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
   "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
@@ -14,6 +15,12 @@ Register::Register(const RegisterNumber registerNumberIn) : registerNumber(regis
 }
 
 void Register::setValue(const int regIn) {
+  if (registerNumber == RegisterNumber::zero) {
+    if constexpr (REGISTER_DEBUG) {
+      std::cerr << "Warning: Attempt to write to $zero register ignored.\n";
+    }
+    return;
+  }
   if constexpr (REGISTER_DEBUG) {
     std::cerr << "Setting value to 0x" << std::hex << regIn << "\n";
   }
@@ -24,14 +31,14 @@ int Register::getValue() const {
   return registerValue;
 }
 
-std::string Register::getRegisterName() {
+std::string Register::getRegisterName() const {
   return registerName;
 }
 
 void Register::setRegisterName() {
   int regNum = static_cast<int>(registerNumber);
   assert(regNum >= 0 && regNum < 32);
-  if ( regNum >= 0 && regNum < 32) {
+  if (regNum >= 0 && regNum < 32) {
     registerName = registerNames[regNum];
   } else {
     registerName = "$uninitializedRegister";
