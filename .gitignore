@@ -76,6 +76,7 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
+# CMake and build files
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -107,7 +108,6 @@ CMakeUserPresets.json
 *.dylib
 *.dll
 
-
 # Fortran module files
 *.mod
 *.smod
@@ -122,3 +122,21 @@ CMakeUserPresets.json
 *.exe
 *.out
 *.app
+
+# Visual Studio and VSCode specific files
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.opensdf
+*.sdf
+*.db
+*.opendb
+*.VC.db
+*.VC.VC.opendb
+
+# CLion specific files
+cmake-build-debug/
+cmake-build-release/

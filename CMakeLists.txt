@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.30)
 project(MIPSquare__ C CXX)
 
 set(CMAKE_CXX_STANDARD 26)
-set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Important project paths
 set(BASE_PATH "${CMAKE_SOURCE_DIR}")
@@ -11,16 +12,16 @@ set(SRC_PATH "${BASE_PATH}/src")
 
 # Collect source files recursively
 file(GLOB_RECURSE SRC_FILES
-        "${SRC_PATH}/*.cpp"
-        "${SRC_PATH}/*.cc"
-        "${SRC_PATH}/*.c"
-        "${SRC_PATH}/*.cxx"
+    "${SRC_PATH}/*.cpp"
+    "${SRC_PATH}/*.cc"
+    "${SRC_PATH}/*.c"
+    "${SRC_PATH}/*.cxx"
 )
 
 # Set compiler flags
 set(CWARN "-Wall -Wextra")
-set(COPT "-O3")  # Optimization level 2 for better performance
-set(CDEBUG "-g")   # Debugging symbols
+set(COPT "-O3") 
+set(CDEBUG "-g") 
 set(CFLAGS "${COPT} ${CWARN} ${CDEBUG}")
 set(CXXFLAGS "${COPT} ${CWARN} ${CDEBUG}")
 
