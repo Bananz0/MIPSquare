@@ -140,3 +140,6 @@ CMakeUserPresets.json
 # CLion specific files
 cmake-build-debug/
 cmake-build-release/
+/.vs/
+
+/build/

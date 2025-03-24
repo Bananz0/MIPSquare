@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(MIPSquare__ C CXX)
+project(MIPSquared C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +19,7 @@ file(GLOB_RECURSE SRC_FILES
 )
 
 # Set compiler flags
-set(CWARN "-Wall -Wextra")
+set(CWARN "-Wall")
 set(COPT "-O3") 
 set(CDEBUG "-g") 
 set(CFLAGS "${COPT} ${CWARN} ${CDEBUG}")
