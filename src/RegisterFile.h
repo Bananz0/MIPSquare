@@ -12,10 +12,13 @@
 class RegisterFile {
 public:
     RegisterFile();
+
     int read(RegisterNumber regNum) const;
+
     void write(RegisterNumber regNum, int value);
 
-    Register& getRegister(RegisterNumber regNum);
+    Register &getRegister(RegisterNumber regNum);
+
 private:
     std::vector<Register> registers;
 

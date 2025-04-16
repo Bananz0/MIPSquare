@@ -34,7 +34,7 @@ void RegisterFile::write(RegisterNumber regNum, int value) {
     registers[index].setValue(value);
 }
 
-Register& RegisterFile::getRegister(RegisterNumber regNum) {
+Register &RegisterFile::getRegister(RegisterNumber regNum) {
     int index = static_cast<int>(regNum);
     return registers[index];
 }
