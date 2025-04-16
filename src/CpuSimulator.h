@@ -8,6 +8,7 @@
 #include <PipelineStructure.h>
 #include "Memory.h"
 #include "RegisterFile.h"
+#include <Configureation.h>
 
 class CPUSimulator {
 public:

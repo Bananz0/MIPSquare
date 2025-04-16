@@ -6,6 +6,7 @@
 #define INSTRUCTION_H
 #include <cstdint>
 #include <string>
+#include <Configureation.h>
 
 #include "Memory.h"
 #include "Register.h"

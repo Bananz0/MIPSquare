@@ -9,3 +9,21 @@ OSSimulator::OSSimulator() {
 }
 
 OSSimulator::~OSSimulator() = default;
+
+void OSSimulator::loadProgramInstructions() {
+    //Open the MIPS Program File
+    std::ifstream programRaw("MIPSProgram.txt");
+
+    std::string myText;
+    while (getline (programRaw, myText)) {
+        MIPSProgram.push_back(myText);
+    }
+
+    //Close the file
+    programRaw.close();
+
+}
+
+void OSSimulator::printInstructions() {
+
+}

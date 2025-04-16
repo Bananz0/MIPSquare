@@ -1,6 +1,7 @@
 #include <Register.h>
 
-#define REGISTER_DEBUG 1
+//#define REGISTER_DEBUG 1
+//Moved the Reg debug to the config header
 
 const std::string Register::registerNames[32] = {
   // Define outside the class

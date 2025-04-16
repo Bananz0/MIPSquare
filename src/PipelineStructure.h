@@ -6,6 +6,7 @@
 #define PIPELINESTRUCTURE_H
 
 
+#include <Configureation.h>
 
 class PipelineStructure {
 

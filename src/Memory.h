@@ -5,6 +5,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <Configureation.h>
 
 class Memory {
 

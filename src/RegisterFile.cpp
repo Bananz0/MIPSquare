@@ -4,7 +4,7 @@
 
 #include "RegisterFile.h"
 
-#define REGFILE_DEBUG 1
+//#define REGFILE_DEBUG 1
 
 RegisterFile::RegisterFile() : registers() {
     registers.reserve(32); //Reserve the 32 registers
