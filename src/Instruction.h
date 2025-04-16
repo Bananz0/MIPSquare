@@ -8,28 +8,26 @@
 #include <string>
 #include <Configureation.h>
 
-#include "Memory.h"
 #include "Register.h"
-#include "RegisterFile.h"
 
 namespace InstructionSet {
     // R-type instructions
-    constexpr uint8_t ADD = 0x20;
-    constexpr uint8_t SUB = 0x22;
-    constexpr uint8_t AND = 0x24;
-    constexpr uint8_t OR = 0x25;
-    constexpr uint8_t SLT = 0x2A;
+    constexpr uint8_t ADD = 0x10;
+    constexpr uint8_t SUB = 0x12;
+    constexpr uint8_t AND = 0x14;
+    constexpr uint8_t OR = 0x16;
+    constexpr uint8_t SLT = 0x18;
 
     // I-type instructions
-    constexpr uint8_t ADDI = 0x08;
-    constexpr uint8_t LW = 0x23;
-    constexpr uint8_t SW = 0x2B;
-    constexpr uint8_t BEQ = 0x04;
-    constexpr uint8_t BNE = 0x05;
+    constexpr uint8_t ADDI = 0x20;
+    constexpr uint8_t LW = 0x22;
+    constexpr uint8_t SW = 0x24;
+    constexpr uint8_t BEQ = 0x26;
+    constexpr uint8_t BNE = 0x28;
 
     // J-type instructions
-    constexpr uint8_t J = 0x02;
-    constexpr uint8_t JAL = 0x03;
+    constexpr uint8_t J = 0x69;
+    constexpr uint8_t JAL = 0x42;
 }
 
 enum class InstructionType {

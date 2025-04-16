@@ -3,3 +3,9 @@
 //
 
 #include "PipelineStructure.h"
+
+PipelineStructure::PipelineStructure() {
+}
+
+PipelineStructure::~PipelineStructure() {
+}

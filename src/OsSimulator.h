@@ -16,11 +16,13 @@ public:
     ~OSSimulator();
 
     void loadProgramInstructions();
-    void printInstructions();
+    void printInstructions() const;
+
+    void startSimulation();
 
 private:
     CPUSimulator *glenCoreUltra;
-    std::vector<std::string> MIPSProgram;
+    std::vector<int> MIPSProgram;
 };
 
 

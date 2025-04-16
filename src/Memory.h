@@ -8,6 +8,12 @@
 #include <Configureation.h>
 
 class Memory {
+public:
+    Memory();
+    ~Memory();
+
+private:
+
 
 };
 
