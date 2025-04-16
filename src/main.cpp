@@ -10,8 +10,7 @@ that,
 #define CLOCK_FREQUENCY 1
 
 int main() {
-    Register zero(RegisterNumber::zero);
-    Register one(RegisterNumber::at);
+    RegisterFile regfile;
 
     return 0;
 }
