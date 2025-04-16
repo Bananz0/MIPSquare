@@ -19,22 +19,22 @@ RegisterFile::RegisterFile() : registers() {
 }
 
 int RegisterFile::read(RegisterNumber regNum) const {
-    int index = static_cast<int>(regNum);
+    int regPos = static_cast<int>(regNum);
     if constexpr (REGFILE_DEBUG) {
-        std::cerr << "Reading from " << registers[index].getRegisterName() << "\n";
+        std::cerr << "Reading from " << registers[regPos].getRegisterName() << "\n";
     }
-    return registers[index].getValue();
+    return registers[regPos].getValue();
 }
 
 void RegisterFile::write(RegisterNumber regNum, int value) {
-    int index = static_cast<int>(regNum);
+    int regPos = static_cast<int>(regNum);
     if constexpr (REGFILE_DEBUG) {
-        std::cerr << "Writing 0x" << std::hex << value << " to " << registers[index].getRegisterName() << "\n";
+        std::cerr << "Writing 0x" << std::hex << value << " to " << registers[regPos].getRegisterName() << "\n";
     }
-    registers[index].setValue(value);
+    registers[regPos].setValue(value);
 }
 
 Register &RegisterFile::getRegister(RegisterNumber regNum) {
-    int index = static_cast<int>(regNum);
-    return registers[index];
+    int regPos = static_cast<int>(regNum);
+    return registers[regPos];
 }

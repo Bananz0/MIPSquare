@@ -37,49 +37,38 @@ enum class InstructionType {
 
 class Instruction {
 public:
-    explicit Instruction(uint32_t encodedInstruction);
+    // Constructors
+    Instruction(); // Default, creates a NOP
+    explicit Instruction(uint32_t rawInstruction); // From binary
+    explicit Instruction(const std::string& asmInstruction); // From assembly text
 
+    // Instruction type and fields
     [[nodiscard]] InstructionType getType() const;
-
     [[nodiscard]] uint8_t getOpcode() const;
-
-    [[nodiscard]] RegisterNumber getRs() const;
-
-    [[nodiscard]] RegisterNumber getRt() const;
-
-    [[nodiscard]] RegisterNumber getRd() const;
-
-    [[nodiscard]] uint8_t getShamt() const;
-
-    [[nodiscard]] uint8_t getFunct() const;
-
+    [[nodiscard]] RegisterNumber getSourceReg1() const;
+    [[nodiscard]] RegisterNumber getSourceReg2() const;
+    [[nodiscard]] RegisterNumber getDestReg() const;
     [[nodiscard]] uint16_t getImmediate() const;
+    [[nodiscard]] uint32_t getJumpTarget() const;
 
-    [[nodiscard]] uint32_t getJumpAddress() const;
-
-    explicit Instruction(const std::string &instructionStr);
-
-    void execute(RegisterFile &regFile, Memory &memory);
-
+    // Debugging helpers
     [[nodiscard]] std::string toString() const;
 
 private:
-    //Instruction Details
-    uint8_t opcode; //6 bits
-    RegisterNumber rs; //5 bits
-    RegisterNumber rt; //5 bits
-    RegisterNumber rd; //5 bits
-    uint8_t shamt; //5bits
-    uint8_t funct; //6bits
-    uint16_t immediate; //16 bits
-    uint32_t jumpAddress; //26 bits
-
+    // Instruction components
     InstructionType type;
+    uint8_t opcode;
+    RegisterNumber rs;
+    RegisterNumber rt;
+    RegisterNumber rd;
+    uint8_t shamt;
+    uint8_t funct;
+    uint16_t immediate;
+    uint32_t jumpTarget;
 
-    //For when I need to debug cause I def will need to
-    void parseEncodedInstruction(uint32_t encodedInstruction);
-
-    void parseInstructionString(const std::string& instructionStr);
+    // Helper methods
+    void parseRawInstruction(uint32_t raw);
+    void parseAssemblyInstruction(const std::string& asm_text);
 };
 
 #endif //INSTRUCTION_H
