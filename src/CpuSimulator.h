@@ -5,12 +5,15 @@
 #ifndef CPUSIMULATOR_H
 #define CPUSIMULATOR_H
 
+#include <memory>
 #include <Configureation.h>
-
 #include <PipelineStructure.h>
 #include "Memory.h"
 #include "RegisterFile.h"
 #include "Alu.h"
+#include "Instruction.h"
+#include <Multiplexer.h>
+#include <ProgramCounter.h>
 
 class CPUSimulator {
 public:
@@ -42,15 +45,19 @@ public:
 
 private:
     //MiPS Register File
-    RegisterFile *regfile;
+    std::unique_ptr<RegisterFile> regfile;
     //MiPs instruction Memory
-    Memory *instructionMemory;
+    std::unique_ptr<Memory> instructionMemory;
     //MiPs Data Memory
-    Memory *dataMemory;
+    std::unique_ptr<Memory> dataMemory;
     //PipeLine
-    PipelineStructure *pipelineStructure;
+    std::unique_ptr<PipelineStructure> pipelineStructure;
     //ALU
-    ALU *alu;
+    std::unique_ptr<ALU> alu;
+    //PC
+    std::unique_ptr<ProgramCounter> programCounter;
+    //Multiplexers
+    std::unique_ptr<Multiplexer> mux1, mux2, mux3, mux4;
 };
 
 

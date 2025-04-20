@@ -39,7 +39,7 @@ void OSSimulator::printInstructions() const {
     std::cout << "===============================" << std::endl;
     std::cout << "Instructions Read from File" << std::endl;
     std::cout << "===============================" << std::endl;
-    for (int i = 0; i < MIPSProgram.size(); i++) {
+    for (size_t i = 0; i < MIPSProgram.size(); i++) {
         std::cout << "Instruction "<< i << ": 0x"<< std::hex <<  MIPSProgram[i] <<std::endl;
     }
     std::cout << "===============================" << std::endl;

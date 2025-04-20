@@ -3,6 +3,5 @@
 int main() {
     OSSimulator glenOS;
     glenOS.loadProgramInstructions();
-
     return 0;
 }
