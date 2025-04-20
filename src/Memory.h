@@ -6,15 +6,21 @@
 #define MEMORY_H
 
 #include <Configureation.h>
+#include <stdint.h>
+#include <vector>
 
 class Memory {
 public:
     Memory();
     ~Memory();
 
+    void setMemory(const std::vector<int>& memDataIn);
+    std::vector<int> getMemory();
+
+    uint32_t getMemoryValue(uint32_t address) const;
+
 private:
-
-
+    std::vector<int> memory;
 };
 
 

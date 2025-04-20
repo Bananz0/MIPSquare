@@ -1,7 +1,8 @@
 #include <OsSimulator.h>
 
 int main() {
-    OSSimulator glenOS;
-    glenOS.loadProgramInstructions();
+    const OSSimulator glenOS;
+
+    glenOS.startSimulation();
     return 0;
 }

@@ -50,7 +50,6 @@ void ProgramCounter::addPC(const uint32_t amount) {
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {
             std::cout << "Program Counter Adding by " << amount << std::endl;
-
         }
     }
     nextPc = currentPc + amount;

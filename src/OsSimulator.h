@@ -15,10 +15,10 @@ public:
     OSSimulator();
     ~OSSimulator();
 
-    void loadProgramInstructions();
+    std::vector<int> loadProgramInstructions();
     void printInstructions() const;
 
-    void startSimulation();
+    void startSimulation() const;
 
 private:
     CPUSimulator *glenCoreUltra;

@@ -13,8 +13,9 @@ RegisterFile::RegisterFile() : registers() {
         registers.emplace_back(static_cast<RegisterNumber>(i));
     }
 
+
     if constexpr (REGFILE_DEBUG) {
-        std::cout << "RegisterFile initialized with 32 registers\n";
+        std::cout <<"\nRegisterFile initialized\n";
     }
 }
 

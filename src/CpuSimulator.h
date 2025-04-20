@@ -20,6 +20,12 @@ public:
     CPUSimulator();
     ~CPUSimulator();
 
+    static std::vector<int> loadProgramFromFile();
+
+    //Load Instructions
+    void loadProgramInstructions(const std::vector<int> &memData) const;
+    static void printInstructions(const std::vector<int> &instructionVector);
+
     //Pipeline Stages
     void fetch();
     void decode();
@@ -35,8 +41,7 @@ public:
     //Data Forwarding
     void dataForwarder();
 
-    //Parse the program file into instructions
-    std::vector<Instruction> parseProgram(const std::string& content);
+    void startCPU();
 
     //Statistics
     int instructionsExecuted = 0;

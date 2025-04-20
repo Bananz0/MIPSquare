@@ -46,6 +46,6 @@ void Register::setRegisterName() {
     std::cerr << "Unknown register number: " << regNum << "\n";
   }
   if constexpr (REGISTER_DEBUG) {
-    std::cerr << "Initialized Register: " << registerName << "\n";
+    std::cout << "Initialized Register: " << registerName << "\n";
   }
 }

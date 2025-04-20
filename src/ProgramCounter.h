@@ -15,7 +15,7 @@ public:
     ProgramCounter();
     ~ProgramCounter();
 
-    uint32_t getPC() const;
+    [[nodiscard]] uint32_t getPC() const;
     void setPC(uint32_t newPC);
 
     void incrementPC();

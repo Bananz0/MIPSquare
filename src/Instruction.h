@@ -36,12 +36,12 @@ enum class InstructionType {
 
 class Instruction {
 public:
-    // Constructors
-    Instruction(); // Default, creates a NOP
-    explicit Instruction(uint32_t rawInstruction); // From binary
-    explicit Instruction(const std::string& asmInstruction); // From assembly text
+    //Constructors
+    Instruction();
+    explicit Instruction(uint32_t rawInstruction);
+    explicit Instruction(const std::string& asmInstruction);
 
-    // Instruction type and fields
+    //Instruction type and fields
     [[nodiscard]] InstructionType getType() const;
     [[nodiscard]] uint8_t getOpcode() const;
     [[nodiscard]] RegisterNumber getSourceReg1() const;
@@ -50,11 +50,11 @@ public:
     [[nodiscard]] uint16_t getImmediate() const;
     [[nodiscard]] uint32_t getJumpTarget() const;
 
-    // Debugging helpers
+    //Debugging helpers
     [[nodiscard]] std::string toString() const;
 
 private:
-    // Instruction components
+    //Instruction components
     InstructionType type;
     uint8_t opcode;
     RegisterNumber rs;
@@ -65,7 +65,7 @@ private:
     uint16_t immediate;
     uint32_t jumpTarget;
 
-    // Helper methods
+    //Helper methods
     void parseRawInstruction(uint32_t raw);
     void parseAssemblyInstruction(const std::string& asm_text);
 };
