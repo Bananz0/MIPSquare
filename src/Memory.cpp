@@ -6,6 +6,8 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <iostream>
+#include <stdexcept>
 
 Memory::Memory() {
     if constexpr (DEBUG) {
@@ -19,18 +21,38 @@ Memory::~Memory() {
     }
 }
 
-void Memory::setMemory(const std::vector<int> &memDataIn) {
+void Memory::setMemory(const std::vector<uint32_t> &memDataIn) {
     memory = memDataIn;
     if constexpr (DEBUG) {
         printf("Memory Bank Set\n");
     }
 }
 
-std::vector<int> Memory::getMemory() {
+std::vector<uint32_t> Memory::getMemory() {
     return memory;
 }
 
+void Memory::setMemoryValue(const uint32_t address, uint32_t value) {
+    size_t index = address >> 2; //Divide by 4 cause its word addressed
+    if (index >= memory.size()) {
+        throw std::out_of_range("Memory address out of range");
+    }
+    if constexpr (DEBUG) {
+        std::cout << "Memory Bank SetValue at address: " << address
+                  << " (index: " << index << ") with value 0x" << std::hex << value << std::dec << "\n";
+    }
+    memory[address>>2] = value;
+}
+
 uint32_t Memory::getMemoryValue(const uint32_t address) const {
-    return memory[address>>2];
+    size_t index = address >> 2; //Divide by 4 cause its word addressed
+    if (index >= memory.size()) {
+        throw std::out_of_range("Memory address out of range");
+    }
+    if constexpr (DEBUG) {
+        std::cout << "Memory Bank ReadValue at address: " << address
+                  << " (index: " << index << ") = 0x" << std::hex << memory[index] << std::dec << "\n";
+    }
+    return memory[index];
 }
 

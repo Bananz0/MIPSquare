@@ -6,7 +6,7 @@
 #define MEMORY_H
 
 #include <Configureation.h>
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 class Memory {
@@ -14,13 +14,15 @@ public:
     Memory();
     ~Memory();
 
-    void setMemory(const std::vector<int>& memDataIn);
-    std::vector<int> getMemory();
+    void setMemory(const std::vector<uint32_t>& memDataIn);
+    std::vector<uint32_t> getMemory();
 
-    uint32_t getMemoryValue(uint32_t address) const;
+    void setMemoryValue(uint32_t address, uint32_t value);
+
+    [[nodiscard]] uint32_t getMemoryValue(uint32_t address) const;
 
 private:
-    std::vector<int> memory;
+    std::vector<uint32_t> memory;
 };
 
 

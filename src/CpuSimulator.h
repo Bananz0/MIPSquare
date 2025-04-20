@@ -20,11 +20,11 @@ public:
     CPUSimulator();
     ~CPUSimulator();
 
-    static std::vector<int> loadProgramFromFile();
+    static std::vector<uint32_t> loadProgramFromFile();
 
     //Load Instructions
-    void loadProgramInstructions(const std::vector<int> &memData) const;
-    static void printInstructions(const std::vector<int> &instructionVector);
+    void loadProgramInstructions(const std::vector<uint32_t> &memData);
+    static void printInstructions(const std::vector<uint32_t> &instructionVector);
 
     //Pipeline Stages
     void fetch();
@@ -47,6 +47,7 @@ public:
     int instructionsExecuted = 0;
     int cyclesExecuted = 0;
     bool programLoaded = false;
+    bool cpuRunning = false;
 
 private:
     //MiPS Register File

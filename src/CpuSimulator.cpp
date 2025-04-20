@@ -31,8 +31,8 @@ CPUSimulator:: CPUSimulator() :
 
 CPUSimulator::~CPUSimulator() = default;
 
-std::vector<int> CPUSimulator::loadProgramFromFile() {
-    std::vector<int> MIPSProgram;
+std::vector<uint32_t> CPUSimulator::loadProgramFromFile() {
+    std::vector<uint32_t> MIPSProgram;
     //Open the MIPS Program File
     std::ifstream programRaw("MIPSProgram.txt");
     if (!programRaw.is_open()) {
@@ -54,14 +54,15 @@ std::vector<int> CPUSimulator::loadProgramFromFile() {
     return MIPSProgram;
 }
 
-void CPUSimulator::loadProgramInstructions(const std::vector<int>& memData) const {
+void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> &memData) {
     if constexpr (DEBUG) {
         std::cout << std::endl << "Pushing Instrictions to instructionMemory" << std::endl;
     }
     instructionMemory->setMemory(memData);
+    programLoaded = true;
 }
 
-void CPUSimulator::printInstructions(const std::vector<int> &instructionVector) {
+void CPUSimulator::printInstructions(const std::vector<uint32_t> &instructionVector) {
     //Used mainly for testng if the read function works and it does
     std::cout << "===============================" << std::endl;
     std::cout << "Instructions Read from File" << std::endl;
@@ -119,6 +120,13 @@ void CPUSimulator::dataForwarder() {
 }
 
 void CPUSimulator::startCPU() {
+    if constexpr (DEBUG) {
+        std::cout << std::endl << "Starting CPU" << std::endl;
+    }
+    //Probably will implement a state machine cycling through the cycles
+    //Will have an on flag and a state where the "cpu" can kill the program
+    cpuRunning = true;
+
 
 }
 
