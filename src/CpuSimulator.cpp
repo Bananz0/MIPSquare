@@ -4,8 +4,6 @@
 
 #include "CpuSimulator.h"
 
-#include <fstream>
-
 CPUSimulator:: CPUSimulator() :
     regfile(new RegisterFile()),
     instructionMemory(new Memory()),
@@ -77,31 +75,31 @@ void CPUSimulator::printInstructions(const std::vector<uint32_t> &instructionVec
 
 void CPUSimulator::fetch() {
     if constexpr (DEBUG) {
-        std::cout << std::endl << "Starting CPU fetch" << std::endl;
+        std::cout << std::endl << "CPU Fetching." << std::endl;
     }
 }
 
 void CPUSimulator::decode() {
     if constexpr (DEBUG) {
-        std::cout << std::endl << "Starting CPU decode" << std::endl;
+        std::cout << std::endl << "CPU Decoding." << std::endl;
     }
 }
 
 void CPUSimulator::execute() {
     if constexpr (DEBUG) {
-        std::cout << std::endl << "Starting CPU excecte" << std::endl;
+        std::cout << std::endl << "CPU Executing." << std::endl;
     }
 }
 
 void CPUSimulator::memoryAccess() {
     if constexpr (DEBUG) {
-        std::cout << std::endl << "Starting CPU memaccess" << std::endl;
+        std::cout << std::endl << "CPU Memory Access." << std::endl;
     }
 }
 
 void CPUSimulator::writeBack() {
     if constexpr (DEBUG) {
-        std::cout << std::endl << "Starting CPU wb" << std::endl;
+        std::cout << std::endl << "CPU WriteBack." << std::endl;
     }
 }
 
@@ -125,9 +123,72 @@ void CPUSimulator::startCPU() {
     }
     //Probably will implement a state machine cycling through the cycles
     //Will have an on flag and a state where the "cpu" can kill the program
-    cpuRunning = true;
+    cpuRunning = true; //Final State Kills the cpu by setting this to false
+
+    while (cpuRunning) {
+        virtualClock();
+
+        switch (currentStage) {
+            case FETCH:
+                fetch();
+                break;
+            case DECODE:
+                decode();
+                break;
+            case EXECUTE:
+                execute();
+                break;
+            case MEMORY_ACCESS:
+                memoryAccess();
+                break;
+            case WRITE_BACK:
+                writeBack();
+                break;
+            case EXIT:
+                cpuRunning = false;
+                break;
+            default:
+                std::cerr << "Invalid Stage" << std::endl;
+                break;
+        }
 
 
+        if constexpr (DEBUG) {
+            printf("Cycle: %d, PC: 0x%x\n", cyclesExecuted, programCounter->getPC());
+            // std::cout << "Cycle: " << cyclesExecuted << std::dec << ", PC: 0x" << std::hex << programCounter->getPC() << std::endl;
+        }
+
+        if (programCounter->getPC() == instructionMemory->getMemory().size() * 4) {
+            //That gets the size of the integers in the vector and mult by 4 to get the bytesize (power of inshallah)
+            std::cout << "Program Counter: " << programCounter->getPC() << std::hex << std::endl;
+            std::cout << "Instruction Memory Size: " << instructionMemory->getMemory().size() * 4 << std::hex <<
+                    std::endl;
+            std::cout << "CPU Stopped" << std::endl;
+            cpuRunning = false;
+        }
+
+        programCounter->incrementPC();
+        programCounter->updatePC();
+    }
+}
+
+void CPUSimulator::virtualClock() {
+    //https://stackoverflow.com/questions/158585/how-do-you-add-a-timed-delay-to-a-c-program
+    using namespace std::this_thread; // sleep_for, sleep_until
+    using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+    using std::chrono::system_clock;
+    sleep_for(10ns);
+    sleep_until(system_clock::now() + 1s);
+    //Clock Starts as a negative so a cycle will he low - high - low
+    if (!clock) {
+        cyclesExecuted++;
+    }
+    clock = !clock;
+    // clock = ~clock; This caused some issues with the toggling
+    // if (clock) {
+    //     nextStage = static_cast<PipelineStages>((currentStage + 1) % (5)); //Will wrap around to 0
+    //     currentStage = nextStage;
+    // }
 }
 
 //Will manage cleaning pointers automativally hopefully

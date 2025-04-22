@@ -14,6 +14,7 @@
 #define ALU_DEBUG 1
 #define CONTROL_DEBUG 1
 #define PC_VERBOSE 1
+#define PC_DEBUG 0
 #define CLOCK_FREQUENCY 1
 
 

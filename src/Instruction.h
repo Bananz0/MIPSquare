@@ -7,41 +7,45 @@
 #include <cstdint>
 #include <string>
 #include <Configureation.h>
+#include <iomanip>
+#include <bitset>
 
 #include "Register.h"
 
 namespace InstructionSet {
-    // R-type instructions
-    constexpr uint8_t ADD = 0x10;
-    constexpr uint8_t SUB = 0x12;
-    constexpr uint8_t AND = 0x14;
-    constexpr uint8_t OR = 0x16;
-    constexpr uint8_t SLT = 0x18;
+    //R Type Instructions Definitoins
+    constexpr uint8_t ADD  = 0x20; //0b100000
+    constexpr uint8_t SUB  = 0x22; //0b100010
+    constexpr uint8_t AND  = 0x24; //0b100100
+    constexpr uint8_t OR   = 0x25; //0b100101
+    constexpr uint8_t SLT  = 0x2A; //0b101010
+    constexpr uint8_t SLL  = 0x00; //0b000000
+    constexpr uint8_t SRL  = 0x02; //0b000010
+    constexpr uint8_t SRA  = 0x03; //0b000011
+    constexpr uint8_t JR   = 0x08; //0b001000
 
-    // I-type instructions
-    constexpr uint8_t ADDI = 0x20;
-    constexpr uint8_t LW = 0x22;
-    constexpr uint8_t SW = 0x24;
-    constexpr uint8_t BEQ = 0x26;
-    constexpr uint8_t BNE = 0x28;
+    //I Type Instructions Definitions
+    constexpr uint8_t ADDI = 0x08; //0b001000
+    constexpr uint8_t LW   = 0x23; //0b100011
+    constexpr uint8_t SW   = 0x2B; //0b101011
+    constexpr uint8_t BEQ  = 0x04; //0b000100
+    constexpr uint8_t BNE  = 0x05; //0b000101
 
-    // J-type instructions
-    constexpr uint8_t J = 0x69;
-    constexpr uint8_t JAL = 0x42;
+    //J Type Instruction Definitions
+    constexpr uint8_t J    = 0x02; //0b000010
+    constexpr uint8_t JAL  = 0x03; //0b000011
 }
 
 enum class InstructionType {
-    R_Instruciton, I_Instruction, J_Instruction
+    R_Instruciton, I_Instruction, J_Instruction, Uninitialized
 };
 
 class Instruction {
 public:
-    //Constructors
     Instruction();
     explicit Instruction(uint32_t rawInstruction);
     explicit Instruction(const std::string& asmInstruction);
 
-    //Instruction type and fields
     [[nodiscard]] InstructionType getType() const;
     [[nodiscard]] uint8_t getOpcode() const;
     [[nodiscard]] RegisterNumber getSourceReg1() const;
@@ -49,25 +53,22 @@ public:
     [[nodiscard]] RegisterNumber getDestReg() const;
     [[nodiscard]] uint16_t getImmediate() const;
     [[nodiscard]] uint32_t getJumpTarget() const;
-
-    //Debugging helpers
+    [[nodiscard]] uint8_t getFunct() const;
     [[nodiscard]] std::string toString() const;
 
-private:
-    //Instruction components
-    InstructionType type;
-    uint8_t opcode;
-    RegisterNumber rs;
-    RegisterNumber rt;
-    RegisterNumber rd;
-    uint8_t shamt;
-    uint8_t funct;
-    uint16_t immediate;
-    uint32_t jumpTarget;
-
-    //Helper methods
     void parseRawInstruction(uint32_t raw);
-    void parseAssemblyInstruction(const std::string& asm_text);
+
+    static void parseAssemblyInstruction(const std::string& asm_text);
+private:
+    InstructionType type = InstructionType::Uninitialized;
+    uint8_t opcode = 0;
+    RegisterNumber rs = RegisterNumber::a0;
+    RegisterNumber rt = RegisterNumber::a0;
+    RegisterNumber rd = RegisterNumber::a0;
+    uint8_t shamt = 0;
+    uint8_t funct = 0;
+    uint16_t immediate = 0;
+    uint32_t jumpTarget = 0;
 };
 
 #endif //INSTRUCTION_H

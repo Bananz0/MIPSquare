@@ -16,8 +16,8 @@ public:
 
     //Pipeline registers
     struct IF_ID_Register {
-        uint32_t pc;
-
+        uint32_t pc{};
+        Instruction readInstruction;
     } if_id;
     struct ID_EX_Register {
         uint32_t instruction;
