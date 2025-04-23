@@ -51,32 +51,38 @@ std::string Instruction::toString() const {
     std::stringstream ss;
     ss << "Instruction: ";
     switch (type) {
-        //Switch Cases are fun
-        //For debugging to see if the instructions are properly debugged
         case InstructionType::R_Instruciton:
             ss << "R-type, Opcode: 0x" << std::hex << static_cast<int>(opcode)
+                    << std::dec
                     << ", rs: " << static_cast<int>(rs)
                     << ", rt: " << static_cast<int>(rt)
                     << ", rd: " << static_cast<int>(rd)
                     << ", shamt: " << static_cast<int>(shamt)
-                    << ", funct: 0x" << std::hex << static_cast<int>(funct) << std::dec;
+                    << ", funct: 0x" << std::hex << static_cast<int>(funct)
+                    << std::dec;
             break;
+
         case InstructionType::I_Instruction:
             ss << "I-type, Opcode: 0x" << std::hex << static_cast<int>(opcode)
+                    << std::dec
                     << ", rs: " << static_cast<int>(rs)
                     << ", rt: " << static_cast<int>(rt)
                     << ", immediate: " << immediate;
             break;
+
         case InstructionType::J_Instruction:
             ss << "J-type, Opcode: 0x" << std::hex << static_cast<int>(opcode)
-                    << ", jumpTarget: 0x" << std::hex << jumpTarget << std::dec;
+                    << ", jumpTarget: 0x" << jumpTarget
+               << std::dec;
             break;
+
         case InstructionType::Uninitialized:
             ss << "Instruction is Uninitialized";
             break;
     }
     return ss.str();
 }
+
 
 //This should get the instruction from the ID as a variable and decode it to the registerfile
 void Instruction::parseRawInstruction(const uint32_t raw) {
@@ -104,7 +110,7 @@ void Instruction::parseRawInstruction(const uint32_t raw) {
         type = InstructionType::R_Instruciton;
     }
 
-    if constexpr (DEBUG) {
+    if constexpr (INST_DEBUG) {
         std::cout << "Raw Instruction: 0x" << std::hex << raw << std::dec << std::endl;
         std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << std::dec << std::endl;
         std::cout << "rs: " << static_cast<int>(rs) << std::endl;

@@ -128,6 +128,14 @@ void CPUSimulator::startCPU() {
     while (cpuRunning) {
         virtualClock();
 
+        //Conditionally run the stages only if the previous is complete
+ writeBack();
+
+        memoryAccess();
+        execute();
+        decode();
+        fetch();
+
         switch (currentStage) {
             case FETCH:
                 fetch();
@@ -180,7 +188,7 @@ void CPUSimulator::virtualClock() {
     sleep_for(10ns);
     sleep_until(system_clock::now() + 1s);
     //Clock Starts as a negative so a cycle will he low - high - low
-    if (!clock) {
+    if (clock) {
         cyclesExecuted++;
     }
     clock = !clock;

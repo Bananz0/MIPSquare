@@ -34,6 +34,13 @@ public:
 
     } mem_wb;
 
+    //Pipelien Flags
+    bool IF_Done = false;
+    bool ID_Done = false;
+    bool EX_Done = false;
+    bool MEM_Done = false;
+    bool WB_Done = false;
+
 private:
     //Current Program Counter
     uint32_t pc = 0;
