@@ -86,29 +86,49 @@ std::string Instruction::toString() const {
 
 //This should get the instruction from the ID as a variable and decode it to the registerfile
 void Instruction::parseRawInstruction(const uint32_t raw) {
-    // Extract fields from the raw instruction
-    opcode = (raw >> 26) & 0x3F; // Bits 31-26
-    rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F); // Bits 25-21
-    rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F); // Bits 20-16
-    rd = static_cast<RegisterNumber>((raw >> 11) & 0x1F); // Bits 15-11
-    shamt = (raw >> 6) & 0x1F; // Bits 10-6
-    funct = raw & 0x3F; // Bits 5-0
-    immediate = raw & 0xFFFF; // Bits 15-0 (for I-type)
-    jumpTarget = raw & 0x3FFFFFF; // Bits 25-0 (for J-type)
+    // // Extract fields from the raw instruction
+    // opcode = (raw >> 26) & 0x3F; // Bits 31-26
+    // rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F); // Bits 25-21
+    // rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F); // Bits 20-16
+    // rd = static_cast<RegisterNumber>((raw >> 11) & 0x1F); // Bits 15-11
+    // shamt = (raw >> 6) & 0x1F; // Bits 10-6
+    // funct = raw & 0x3F; // Bits 5-0
+    // immediate = raw & 0xFFFF; // Bits 15-0 (for I-type)
+    // jumpTarget = raw & 0x3FFFFFF; // Bits 25-0 (for J-type)
+    //
+    // // Determine instruction type
+    // if (opcode == 0) {
+    //     type = InstructionType::R_Instruciton;
+    // } else if (opcode == 2 || opcode == 3) {
+    //     type = InstructionType::J_Instruction;
+    // } else {
+    //     type = InstructionType::I_Instruction;
+    // }
 
-    // Determine instruction type
+    //Refractored for better parsing
+    opcode = (raw >> 26) & 0x3F; //Extract opcode first
+
+    rs = rt = rd = RegisterNumber::zero; //Set all to zero
+    shamt = funct = immediate = jumpTarget = 0;
+
+    //Determine type and extract relevant fields
     if (opcode == 0) {
         type = InstructionType::R_Instruciton;
+        rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F);
+        rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F);
+        rd = static_cast<RegisterNumber>((raw >> 11) & 0x1F);
+        shamt = (raw >> 6) & 0x1F;
+        funct = raw & 0x3F;
     } else if (opcode == 2 || opcode == 3) {
         type = InstructionType::J_Instruction;
+        jumpTarget = raw & 0x03FFFFFF; // 26-bit target
     } else {
         type = InstructionType::I_Instruction;
+        rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F);
+        rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F);
+        immediate = raw & 0xFFFF; // 16-bit immediate
     }
 
-    //Special case for JR
-    if (opcode == 0 && funct == InstructionSet::JR) {
-        type = InstructionType::R_Instruciton;
-    }
 
     if constexpr (INST_DEBUG) {
         std::cout << "Raw Instruction: 0x" << std::hex << raw << std::dec << std::endl;
