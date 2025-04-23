@@ -125,7 +125,8 @@ void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) {
 
 
 void CPUSimulator::decode() {
-    if (!pipelineStructure->if_id.valid) { //Checks if the instruction in If/Id is a valid instruction
+    if (!pipelineStructure->if_id.valid) {
+        //Checks if the instruction in If/Id is a valid instruction
         pipelineStructure->id_ex.valid = false; //If not, pass a bubble (NOP) downstream
         pipelineStructure->ID_Done = true;
         return;
@@ -175,12 +176,12 @@ void CPUSimulator::decode() {
             aluOp = 0x1; //Substract for branch
             break;
         case 0x0: //R-type instructions
-            switch(instr.getFunct()){
-            case 0x20: //ADD
+            switch (instr.getFunct()) {
+                case 0x20: //ADD
                     aluOp = 0x0; //Add
                     regWrite = true;
                     break;
-            case 0x00: //SLL
+                case 0x00: //SLL
                     aluOp = 0x4;
                     regWrite = true;
                     break;
@@ -263,7 +264,8 @@ void CPUSimulator::execute() {
             aluResult = aluInput1 << aluInput2;
 
         default:
-            std::cerr << "Error: Unknown ALU operation: 0x" << std::hex << static_cast<int>(pipelineStructure->id_ex.aluOp) << std::dec << std::endl;
+            std::cerr << "Error: Unknown ALU operation: 0x" << std::hex << static_cast<int>(pipelineStructure->id_ex.
+                aluOp) << std::dec << std::endl;
             break;
     }
 
