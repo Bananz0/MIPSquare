@@ -39,8 +39,11 @@ public:
 
     //Pipeline Stages
     void fetch();
+
+    void handleBranchHazard(bool taken, uint32_t target_pc);
+
     void decode();
-    void handleBranchHazard(bool cond, uint32_t uint32);
+    void handleBranchHazard(bool cond, uint32_t uint32) const;
     void execute();
     void memoryAccess();
     void writeBack();

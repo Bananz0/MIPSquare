@@ -15,9 +15,9 @@ class RegisterFile {
 public:
     RegisterFile();
 
-    int read(RegisterNumber regNum) const;
+    uint32_t read(RegisterNumber regNum) const;
 
-    void write(RegisterNumber regNum, int value);
+    void write(RegisterNumber regNum, uint32_t value);
 
     Register &getRegister(RegisterNumber regNum);
 

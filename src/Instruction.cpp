@@ -146,7 +146,14 @@ void Instruction::parseRawInstruction(const uint32_t raw) {
     } else if (opcode == 2 || opcode == 3) {
         type = InstructionType::J_Instruction;
         jumpTarget = raw & 0x03FFFFFF; // 26-bit target
-    } else {
+    }
+    else if (opcode == 0x0C) { // SLLADDI
+        type = InstructionType::I_Instruction;
+        rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F); // Source register
+        rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F); // Destination register
+        immediate = raw & 0xFFFF;
+    }
+    else {
         type = InstructionType::I_Instruction;
         rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F);
         rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F);

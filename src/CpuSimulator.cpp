@@ -15,7 +15,6 @@ CPUSimulator:: CPUSimulator() :
     mux2(new Multiplexer()),
     mux3(new Multiplexer()),
     mux4(new Multiplexer()){
-
     if constexpr (DEBUG) {
         std::cout << std::endl << "Loading Instructions from glenOS 11" << std::endl;
     }
@@ -126,91 +125,97 @@ void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) {
 
 
 void CPUSimulator::decode() {
-    // Don't check IF_Done here - we want each stage to run independently
-
-    // Check if the instruction in IF/ID is valid
-    if (!pipelineStructure->if_id.valid) {
-        // Pass a bubble (NOP) downstream
-        pipelineStructure->id_ex.valid = false;
+    if (!pipelineStructure->if_id.valid) { //Checks if the instruction in If/Id is a valid instruction
+        pipelineStructure->id_ex.valid = false; //If not, pass a bubble (NOP) downstream
         pipelineStructure->ID_Done = true;
         return;
     }
 
+
     // Extract instruction fields
     Instruction &instr = pipelineStructure->if_id.instruction;
+    uint32_t rs_value = regfile->getRegisterValue(instr.getRs());
+    uint32_t rt_value = regfile->getRegisterValue(instr.getRt());
 
     if constexpr (DEBUG) {
         std::cout << "\nCPU Decoding: " << instr.toString() << std::endl;
-    }
-    if constexpr (DEBUG) {
         std::cout << "Reading from $" << getRegisterName(instr.getRs()) << std::endl;
         std::cout << "Reading from $" << getRegisterName(instr.getRt()) << std::endl;
     }
 
-
-    uint32_t rs_value = regfile->getRegisterValue(instr.getRs());
-    uint32_t rt_value = regfile->getRegisterValue(instr.getRt());
-
-    // Generate control signals based on opcode/function
-    bool regWrite = false, memRead = false, memWrite = false;
-    bool memToReg = false, branch = false, jump = false;
+    //Initialize all the values
     uint8_t aluOp = 0;
     bool aluSrc = false;
+    bool regWrite = false;
+    bool memRead = false;
+    bool memWrite = false;
+    bool memToReg = false;
+    bool branch = false;
 
-    // Set control signals based on instruction type
     switch (instr.getOpcode()) {
-        case 0x0: // R-type
+        case 0x08: //ADDI
+            aluOp = 0x0; // Add
+            aluSrc = true; // Immediate value
             regWrite = true;
-            aluOp = 0x2; // R-type ALU operation
             break;
-        case 0x23: // lw
-            regWrite = true;
+        case 0x23: //LW
             memRead = true;
+            regWrite = true;
             memToReg = true;
-            aluSrc = true;
-            aluOp = 0x0; // Add for address calculation
+            aluOp = 0x0; //Add base and offset
+            aluSrc = true; //alu source is immediate
             break;
-        case 0x2B: // sw
+        case 0x2B: //SW
             memWrite = true;
-            aluSrc = true;
-            aluOp = 0x0; // Add for address calculation
+            aluOp = 0x0; //Add base and offset
+            aluSrc = true; //Immediate Value
             break;
-        case 0x4: // beq
+        case 0x4: //BEQ
             branch = true;
-            aluOp = 0x1; // Subtract for comparison
+            aluOp = 0x1; //Substract for branch
             break;
-        case 0x2: // j
-            jump = true;
+        case 0x0: //R-type instructions
+            switch(instr.getFunct()){
+            case 0x20: //ADD
+                    aluOp = 0x0; //Add
+                    regWrite = true;
+                    break;
+            case 0x00: //SLL
+                    aluOp = 0x4;
+                    regWrite = true;
+                    break;
+            }
             break;
-        // Add other instruction types as needed
+        case 0x25: //SLTIU
+            aluOp = 0x2; //Set less than Immediate unsignd
+            aluSrc = true; //Immiedate value
+            regWrite = true;
+            break;
+        default:
+            std::cout << "Invalid instruction" << std::endl;
+            break;
     }
-
-    // Update ID/EX pipeline register
+    //Updating ID/EX register
     pipelineStructure->id_ex.pc = pipelineStructure->if_id.pc;
     pipelineStructure->id_ex.instruction = instr;
     pipelineStructure->id_ex.rs_num = instr.getRs();
     pipelineStructure->id_ex.rt_num = instr.getRt();
-    pipelineStructure->id_ex.rd_num = instr.isRType() ? instr.getRd() : instr.getRt(); // For I-type, destination is rt
     pipelineStructure->id_ex.rs_value = rs_value;
     pipelineStructure->id_ex.rt_value = rt_value;
     pipelineStructure->id_ex.immediate = instr.getImmediate();
-
-    // Control signals
+    //Control Signals
+    pipelineStructure->id_ex.aluOp = aluOp;
+    pipelineStructure->id_ex.aluSrc = aluSrc;
     pipelineStructure->id_ex.regWrite = regWrite;
     pipelineStructure->id_ex.memRead = memRead;
     pipelineStructure->id_ex.memWrite = memWrite;
-    pipelineStructure->id_ex.memToReg = memToReg;
-    pipelineStructure->id_ex.branch = branch;
-    pipelineStructure->id_ex.jump = jump;
-    pipelineStructure->id_ex.aluOp = aluOp;
-    pipelineStructure->id_ex.aluSrc = aluSrc;
     pipelineStructure->id_ex.valid = true;
+
+    pipelineStructure->ID_Done = true;
 
     if constexpr (DEBUG) {
         std::cout << "Decode complete - instruction moving to ID/EX stage" << std::endl;
     }
-
-    pipelineStructure->ID_Done = true;
 }
 
 void CPUSimulator::execute() {
@@ -240,26 +245,25 @@ void CPUSimulator::execute() {
 
     // ALU operations based on aluOp
     switch (pipelineStructure->id_ex.aluOp) {
-        case 0x0: // Add
+        case 0x0: // Add (ADDI, LW, SW, ADD)
             aluResult = aluInput1 + aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: Add operation" << std::endl;
             break;
-        case 0x1: // Subtract (for branch)
+
+        case 0x1: // Subtract (for branch BEQ)
             aluResult = aluInput1 - aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: Subtract operation" << std::endl;
             break;
-        case 0x2: // R-type function-based operation
-            switch (pipelineStructure->id_ex.instruction.getFunct()) {
-                case 0x20: // add
-                    aluResult = aluInput1 + aluInput2;
-                    if constexpr (DEBUG) std::cout << "ALU: R-type Add operation" << std::endl;
-                    break;
-                case 0x22: // sub
-                    aluResult = aluInput1 - aluInput2;
-                    if constexpr (DEBUG) std::cout << "ALU: R-type Subtract operation" << std::endl;
-                    break;
-                // Add other functions as needed
-            }
+
+        case 0x2: // SLTIU (Set Less Than Immediate Unsigned)
+            aluResult = (aluInput1 < aluInput2) ? 1 : 0;
+            if constexpr (DEBUG) std::cout << "ALU: SLTIU operation" << std::endl;
+            break;
+        case 0x4: //SLL
+            aluResult = aluInput1 << aluInput2;
+
+        default:
+            std::cerr << "Error: Unknown ALU operation: 0x" << std::hex << static_cast<int>(pipelineStructure->id_ex.aluOp) << std::dec << std::endl;
             break;
     }
 
@@ -460,7 +464,6 @@ void CPUSimulator::startCPU() {
     }
 
     cpuRunning = true;
-    uint32_t maxCycles = instructionMemory->getMemory().size() * 10;
     uint32_t cycleCount = 0;
 
     // Initial pipeline state - all stages empty
@@ -472,14 +475,13 @@ void CPUSimulator::startCPU() {
     while (cpuRunning) {
         // Execute pipeline stages in reverse order to avoid overwriting data
         // Stages that depend on previous stages should go first
-        writeBack(); // Stage 5 - doesn't depend on other stages in current cycle
-        memoryAccess(); // Stage 4
-        execute(); // Stage 3
-        decode(); // Stage 2
-        fetch(); // Stage 1
+        writeBack(); // Stage 5 - doesn't depend on other stages in the current cycle
+        memoryAccess();
+        execute();
+        decode();
+        fetch();
 
-        // The normal pipeline flow - don't need to explicitly set flags after each stage
-        pipelineStructure->IF_Done = true; // Since fetch always completes
+        pipelineStructure->IF_Done = true; //Since fetch always completes
 
         programCounter->updatePC();
         virtualClock();
@@ -494,7 +496,7 @@ void CPUSimulator::startCPU() {
                     << " WB=" << pipelineStructure->WB_Done << std::endl;
         }
 
-        // Check termination conditions
+        //Check termination conditions
         bool noMoreInstructions = programCounter->getPC() >= instructionMemory->getMemory().size() * 4;
         bool pipelineEmpty = !pipelineStructure->if_id.valid &&
                              !pipelineStructure->id_ex.valid &&
@@ -506,12 +508,6 @@ void CPUSimulator::startCPU() {
             cpuRunning = false;
         }
 
-        // Safety mechanism
-        cycleCount++;
-        if (cycleCount > maxCycles) {
-            std::cout << "Maximum cycle count reached. CPU stopping." << std::endl;
-            cpuRunning = false;
-        }
     }
 }
 
@@ -541,14 +537,18 @@ void CPUSimulator::virtualClock() {
 
 void CPUSimulator::printPipelineState() const {
     std::cout << "Pipeline State:" << std::endl;
-    std::cout << "  IF/ID: " << (pipelineStructure->if_id.valid ?
-                              pipelineStructure->if_id.instruction.toString() : "NOP") << std::endl;
-    std::cout << "  ID/EX: " << (pipelineStructure->id_ex.valid ?
-                              pipelineStructure->id_ex.instruction.toString() : "NOP") << std::endl;
-    std::cout << "  EX/MEM: " << (pipelineStructure->ex_mem.valid ?
-                               pipelineStructure->ex_mem.instruction.toString() : "NOP") << std::endl;
-    std::cout << "  MEM/WB: " << (pipelineStructure->mem_wb.valid ?
-                               pipelineStructure->mem_wb.instruction.toString() : "NOP") << std::endl;
+    std::cout << "  IF/ID: " << (pipelineStructure->if_id.valid
+                                     ? pipelineStructure->if_id.instruction.toString()
+                                     : "NOP") << std::endl;
+    std::cout << "  ID/EX: " << (pipelineStructure->id_ex.valid
+                                     ? pipelineStructure->id_ex.instruction.toString()
+                                     : "NOP") << std::endl;
+    std::cout << "  EX/MEM: " << (pipelineStructure->ex_mem.valid
+                                      ? pipelineStructure->ex_mem.instruction.toString()
+                                      : "NOP") << std::endl;
+    std::cout << "  MEM/WB: " << (pipelineStructure->mem_wb.valid
+                                      ? pipelineStructure->mem_wb.instruction.toString()
+                                      : "NOP") << std::endl;
 }
 
 std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
@@ -564,5 +564,6 @@ std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
     }
     return "unknown";
 }
+
 //Will manage cleaning pointers automativally hopefully
 //(according to the new cpp standards i think)

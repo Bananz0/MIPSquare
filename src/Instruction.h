@@ -15,6 +15,7 @@
 namespace InstructionSet {
     //R Type Instructions Definitoins
     constexpr uint8_t ADD = 0x20; //0b100000
+    constexpr uint8_t SLLADDI = 0x0C; // Custom instruction
     constexpr uint8_t SUB = 0x22; //0b100010
     constexpr uint8_t AND = 0x24; //0b100100
     constexpr uint8_t OR = 0x25; //0b100101

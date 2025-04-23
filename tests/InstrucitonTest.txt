@@ -10,6 +10,10 @@ Instruction instr1(rawInstruction1);
 Instruction instr2(rawInstruction2);
 Instruction instr3(rawInstruction3);
 
+
+    regfile->setRegisterValue(9, 10);
+    regfile->setRegisterValue(10, 20);
+
 int main() {
     const OSSimulator glenOS;
     std::cout << instr1.toString() << std::endl;

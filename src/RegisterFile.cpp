@@ -41,19 +41,19 @@ void RegisterFile::setRegisterValue(uint32_t regNum, uint32_t value) {
         return;
     }
 
-    RegisterNumber reg = static_cast<RegisterNumber>(regNum);
+    const auto reg = static_cast<RegisterNumber>(regNum);
     write(reg, value);
 }
 
-int RegisterFile::read(RegisterNumber regNum) const {
-    int regPos = static_cast<int>(regNum);
+uint32_t RegisterFile::read(RegisterNumber regNum) const {
+    const int regPos = static_cast<int>(regNum);
     if constexpr (REGFILE_DEBUG) {
         std::cout << "Reading from " << registers[regPos].getRegisterName() << "\n";
     }
     return registers[regPos].getValue();
 }
 
-void RegisterFile::write(RegisterNumber regNum, int value) {
+void RegisterFile::write(RegisterNumber regNum, uint32_t value) {
     int regPos = static_cast<int>(regNum);
     // Check for $zero register
     if (regPos == 0) {

@@ -3,7 +3,6 @@
 //
 
 #include "Memory.h"
-
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
@@ -37,7 +36,7 @@ void Memory::setMemoryValue(const uint32_t address, uint32_t value) {
     if (index >= memory.size()) {
         throw std::out_of_range("Memory address out of range");
     }
-    if constexpr (DEBUG) {
+    if constexpr (MEMORY_DEBUG) {
         std::cout << "Memory Bank SetValue at address: " << address
                   << " (index: " << index << ") with value 0x" << std::hex << value << std::dec << "\n";
     }
@@ -51,7 +50,7 @@ uint32_t Memory::getMemoryValue(const uint32_t address) const {
         return 0;
     }
 
-    if constexpr (DEBUG) {
+    if constexpr (MEMORY_DEBUG) {
         std::cout << "Memory Bank ReadValue at address: " << address << " (index: " << index << ") = 0x"
                   << std::hex << memory[index] << std::dec << std::endl;
     }
