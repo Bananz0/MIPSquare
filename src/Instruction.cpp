@@ -47,6 +47,30 @@ uint8_t Instruction::getFunct() const {
     return this->funct;
 }
 
+uint8_t Instruction::getRs() const {
+    return static_cast<uint8_t>(this->rs);
+}
+
+uint8_t Instruction::getRt() const {
+    return static_cast<uint8_t>(this->rt);
+}
+
+uint8_t Instruction::getRd() const {
+    return static_cast<uint8_t>(this->rd);
+}
+
+bool Instruction::isRType() const {
+    return type == InstructionType::R_Instruciton;
+}
+
+bool Instruction::isIType() const {
+    return type == InstructionType::I_Instruction;
+}
+
+bool Instruction::isJType() const {
+    return type == InstructionType::J_Instruction;
+}
+
 std::string Instruction::toString() const {
     std::stringstream ss;
     ss << "Instruction: ";

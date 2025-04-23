@@ -35,30 +35,25 @@ public:
     void loadProgramInstructions(const std::vector<uint32_t> &memData);
     static void printInstructions(const std::vector<uint32_t> &instructionVector);
 
+    bool detectLoadUseHazard();
+
     //Pipeline Stages
     void fetch();
     void decode();
+    void handleBranchHazard(bool cond, uint32_t uint32);
     void execute();
     void memoryAccess();
     void writeBack();
 
-    //Hazard detection and handling
-    bool detectDataHazard();
-    bool detectControlHazard();
-    void handleHazard();
+    // //Hazard detection and handling
+    // bool detectDataHazard();
+    // bool detectControlHazard();
+    // void handleHazard();
 
     //Data Forwarding
-    void dataForwarder();
-
+    void dataForwarder(uint32_t &input1, uint32_t &input2);
     void startCPU();
-
     void virtualClock();
-
-    //Statistics
-    int instructionsExecuted = 0;
-    int cyclesExecuted = 0;
-    bool programLoaded = false;
-    bool cpuRunning = false;
 
 private:
     //CPU Clock
@@ -79,6 +74,24 @@ private:
     //Multiplexers
     std::unique_ptr<Multiplexer> mux1, mux2, mux3, mux4;
 
+    //Pipeline Register values for data
+    uint32_t  instructionFetch;
+    uint32_t  readData1;
+    uint32_t  readData2;
+    uint32_t  aluResult;
+    uint32_t  memoryReadData;
+
+    //Statistics
+    int instructionsExecuted = 0;
+    int cyclesExecuted = 0;
+    bool programLoaded = false;
+    bool cpuRunning = false;
+
+    // Control Signals for Each Stage (Example, add more as needed)
+    bool regWrite; // WB Stage
+    bool memRead;  // MEM Stage
+    bool memWrite; // MEM Stage
+    bool aluOp;   // EX Stage
 };
 
 

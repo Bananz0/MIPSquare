@@ -9,6 +9,7 @@
 #include "Register.h"
 #include <vector>
 #include <Configureation.h>
+#include <cstdint>
 
 class RegisterFile {
 public:
@@ -19,6 +20,10 @@ public:
     void write(RegisterNumber regNum, int value);
 
     Register &getRegister(RegisterNumber regNum);
+
+    [[nodiscard]] uint32_t getRegisterValue(uint32_t regNum) const;
+
+    void setRegisterValue(uint32_t regNum, uint32_t value);
 
 private:
     std::vector<Register> registers;

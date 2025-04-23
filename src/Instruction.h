@@ -54,10 +54,16 @@ public:
     [[nodiscard]] uint16_t getImmediate() const;
     [[nodiscard]] uint32_t getJumpTarget() const;
     [[nodiscard]] uint8_t getFunct() const;
+    [[nodiscard]] uint8_t getRs() const;
+    [[nodiscard]] uint8_t getRt() const;
+    [[nodiscard]] uint8_t getRd() const;
 
     [[nodiscard]] std::string toString() const;
 
     void parseRawInstruction(uint32_t raw);
+    bool isRType() const;
+    bool isIType() const;
+    bool isJType() const;
 
     static void parseAssemblyInstruction(const std::string &asm_text);
 
@@ -72,5 +78,6 @@ private:
     uint16_t immediate = 0;
     uint32_t jumpTarget = 0;
 };
+
 
 #endif //INSTRUCTION_H

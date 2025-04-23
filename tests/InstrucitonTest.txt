@@ -1,0 +1,25 @@
+#include <OsSimulator.h>
+#include "Instruction.h"
+#include <bitset>
+
+uint32_t rawInstruction1 = 0x012A8020; //000000(R) 01001(9)[$t1] 01010(10)[$t2] 10000(16)[$s0] 00000 100000
+uint32_t rawInstruction2 = 0x23BD0004; //001000(I) 11101 11101 00000 00000 000100 001000 11101 11101 00000 00000 000100
+uint32_t rawInstruction3 = 0x08100000; //000010 00000 10000 00000 00000 000000
+
+Instruction instr1(rawInstruction1);
+Instruction instr2(rawInstruction2);
+Instruction instr3(rawInstruction3);
+
+int main() {
+    const OSSimulator glenOS;
+    std::cout << instr1.toString() << std::endl;
+    std::cout << instr2.toString() << std::endl;
+    std::cout << instr3.toString() << std::endl;
+
+    std::cout << "Instruction 1 binary: " << std::bitset<32>(rawInstruction1) << std::endl;
+    std::cout << "Instruction 2 binary: " << std::bitset<32>(rawInstruction2) << std::endl;
+    std::cout << "Instruction 3 binary: " << std::bitset<32>(rawInstruction3) << std::endl;
+
+    //glenOS.startSimulation();
+    return 0;
+}
