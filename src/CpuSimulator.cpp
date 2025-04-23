@@ -127,7 +127,7 @@ void CPUSimulator::decode() {
     }
 
     // Extract instruction fields
-    Instruction& instr = pipelineStructure->if_id.instruction;
+    Instruction &instr = pipelineStructure->if_id.instruction;
 
     // Get register values
     uint32_t rs_value = regfile->getRegisterValue(instr.getRs());
@@ -144,7 +144,7 @@ void CPUSimulator::decode() {
         case 0x0: // R-type
             regWrite = true;
             aluOp = 0x2; // R-type ALU operation
-            // Additional R-type controls...
+        // Additional R-type controls...
             break;
         case 0x23: // lw
             regWrite = true;
@@ -209,9 +209,9 @@ void CPUSimulator::execute() {
 
     //Handle forwarding first
     uint32_t aluInput1 = pipelineStructure->id_ex.rs_value;
-    uint32_t aluInput2 = pipelineStructure->id_ex.aluSrc ?
-                         pipelineStructure->id_ex.immediate :
-                         pipelineStructure->id_ex.rt_value;
+    uint32_t aluInput2 = pipelineStructure->id_ex.aluSrc
+                             ? pipelineStructure->id_ex.immediate
+                             : pipelineStructure->id_ex.rt_value;
 
     //Apply forwarding logic
     dataForwarder(aluInput1, aluInput2);
@@ -230,13 +230,13 @@ void CPUSimulator::execute() {
         case 0x2: // R-type function-based operation
             // Handle based on function code
             switch (pipelineStructure->id_ex.instruction.getFunct()) {
-            case 0x20: // add
+                case 0x20: // add
                     aluResult = aluInput1 + aluInput2;
                     break;
-            case 0x22: // sub
+                case 0x22: // sub
                     aluResult = aluInput1 - aluInput2;
                     break;
-                    //TODO: Will add other functions later
+                //TODO: Will add other functions later
             }
             break;
     }
@@ -262,7 +262,7 @@ void CPUSimulator::execute() {
         if (bool branchTaken = (aluResult == 0)) {
             // Calculate branch target
             uint32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
-                                     (pipelineStructure->id_ex.immediate << 2);
+                                    (pipelineStructure->id_ex.immediate << 2);
             handleBranchHazard(true, branchTarget);
             if (branchTaken) {
                 programCounter->setPC(branchTarget); //Override PC
@@ -338,17 +338,18 @@ void CPUSimulator::writeBack() {
 
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
-        uint32_t writeData = pipelineStructure->mem_wb.memToReg ?
-                           pipelineStructure->mem_wb.memory_read_data :
-                           pipelineStructure->mem_wb.alu_result;
+        uint32_t writeData = pipelineStructure->mem_wb.memToReg
+                                 ? pipelineStructure->mem_wb.memory_read_data
+                                 : pipelineStructure->mem_wb.alu_result;
 
         // Write to register file
-        if (pipelineStructure->mem_wb.rd_num != 0) { // Don't write to $0
+        if (pipelineStructure->mem_wb.rd_num != 0) {
+            // Don't write to $0
             regfile->setRegisterValue(pipelineStructure->mem_wb.rd_num, writeData);
 
             if constexpr (DEBUG) {
                 std::cout << std::endl << "CPU WriteBack: Wrote " << std::hex << writeData <<
-                          " to register $" << std::dec << pipelineStructure->mem_wb.rd_num << std::endl;
+                        " to register $" << std::dec << pipelineStructure->mem_wb.rd_num << std::endl;
             }
         }
     }
@@ -380,14 +381,13 @@ bool CPUSimulator::detectLoadUseHazard() {
     return false;
 }
 
-void CPUSimulator::dataForwarder(uint32_t& aluInput1, uint32_t& aluInput2) {
+void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
     uint32_t rs_num = pipelineStructure->id_ex.rs_num;
     uint32_t rt_num = pipelineStructure->id_ex.rt_num;
 
     // Forward from EX/MEM stage
     if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
         pipelineStructure->ex_mem.rd_num != 0) {
-
         // RS forwarding
         if (pipelineStructure->ex_mem.rd_num == rs_num) {
             aluInput1 = pipelineStructure->ex_mem.alu_result;
@@ -408,16 +408,14 @@ void CPUSimulator::dataForwarder(uint32_t& aluInput1, uint32_t& aluInput2) {
     // Forward from MEM/WB stage
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite &&
         pipelineStructure->mem_wb.rd_num != 0) {
-
-        uint32_t wb_data = pipelineStructure->mem_wb.memToReg ?
-                         pipelineStructure->mem_wb.memory_read_data :
-                         pipelineStructure->mem_wb.alu_result;
+        uint32_t wb_data = pipelineStructure->mem_wb.memToReg
+                               ? pipelineStructure->mem_wb.memory_read_data
+                               : pipelineStructure->mem_wb.alu_result;
 
         // Only forward from MEM/WB if EX/MEM is not already forwarding
         if (!(pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
               pipelineStructure->ex_mem.rd_num == rs_num) &&
             pipelineStructure->mem_wb.rd_num == rs_num) {
-
             aluInput1 = wb_data;
             if constexpr (DEBUG) {
                 std::cout << "Forwarding from MEM/WB to RS input" << std::endl;
@@ -429,7 +427,6 @@ void CPUSimulator::dataForwarder(uint32_t& aluInput1, uint32_t& aluInput2) {
             !(pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
               pipelineStructure->ex_mem.rd_num == rt_num) &&
             pipelineStructure->mem_wb.rd_num == rt_num) {
-
             aluInput2 = wb_data;
             if constexpr (DEBUG) {
                 std::cout << "Forwarding from MEM/WB to RT input" << std::endl;

@@ -44,22 +44,20 @@ public:
         uint8_t aluOp{};
         bool aluSrc{};
         bool valid = true;
-
-
     } id_ex;
     struct EX_MEM_Register {
         uint32_t pc{};
-        Instruction instruction;  // Keep full instruction object
+        Instruction instruction; // Keep full instruction object
 
         //Register identifiers (still needed for forwarding)
         uint32_t rs_num{};
         uint32_t rt_num{};
-        uint32_t rd_num{};    // destination register
+        uint32_t rd_num{}; // destination register
 
         // Results and values
         uint32_t alu_result{};
         uint32_t rs_value{};
-        uint32_t rt_value{};       //Also used as write_data for memory
+        uint32_t rt_value{}; //Also used as write_data for memory
 
         // Control signals
         bool regWrite{};
@@ -67,14 +65,14 @@ public:
         bool memWrite{};
         bool memToReg{};
 
-        bool valid = true;    //For handling stalls/flushes
+        bool valid = true; //For handling stalls/flushes
     } ex_mem;
     struct MEM_WB_Register {
         uint32_t pc{};
         Instruction instruction;
 
         // Register identifiers
-        uint32_t rd_num{};    // Destination register
+        uint32_t rd_num{}; // Destination register
 
         // Results
         uint32_t alu_result{};
@@ -82,9 +80,9 @@ public:
 
         // Control signals
         bool regWrite{};
-        bool memToReg{};      // Select between ALU result and memory data
+        bool memToReg{}; // Select between ALU result and memory data
 
-        bool valid = true;    // For handling stalls/flushes
+        bool valid = true; // For handling stalls/flushes
     } mem_wb;
 
     //Pipelien Flags

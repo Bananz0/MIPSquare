@@ -75,11 +75,11 @@ private:
     std::unique_ptr<Multiplexer> mux1, mux2, mux3, mux4;
 
     //Pipeline Register values for data
-    uint32_t  instructionFetch;
-    uint32_t  readData1;
-    uint32_t  readData2;
-    uint32_t  aluResult;
-    uint32_t  memoryReadData;
+    uint32_t instructionFetch;
+    uint32_t readData1;
+    uint32_t readData2;
+    uint32_t aluResult;
+    uint32_t memoryReadData;
 
     //Statistics
     int instructionsExecuted = 0;
@@ -89,9 +89,9 @@ private:
 
     // Control Signals for Each Stage (Example, add more as needed)
     bool regWrite; // WB Stage
-    bool memRead;  // MEM Stage
+    bool memRead; // MEM Stage
     bool memWrite; // MEM Stage
-    bool aluOp;   // EX Stage
+    bool aluOp; // EX Stage
 };
 
 
