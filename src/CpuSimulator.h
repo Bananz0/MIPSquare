@@ -55,6 +55,10 @@ public:
     void startCPU();
     void virtualClock();
 
+    void printPipelineState() const;
+
+    static std::string getRegisterName(uint8_t regNum);
+
 private:
     //CPU Clock
     bool clock = false;
@@ -75,11 +79,11 @@ private:
     std::unique_ptr<Multiplexer> mux1, mux2, mux3, mux4;
 
     //Pipeline Register values for data
-    uint32_t instructionFetch;
-    uint32_t readData1;
-    uint32_t readData2;
-    uint32_t aluResult;
-    uint32_t memoryReadData;
+    uint32_t instructionFetch{};
+    uint32_t readData1{};
+    uint32_t readData2{};
+    uint32_t aluResult{};
+    uint32_t memoryReadData{};
 
     //Statistics
     int instructionsExecuted = 0;
@@ -88,10 +92,10 @@ private:
     bool cpuRunning = false;
 
     // Control Signals for Each Stage (Example, add more as needed)
-    bool regWrite; // WB Stage
-    bool memRead; // MEM Stage
-    bool memWrite; // MEM Stage
-    bool aluOp; // EX Stage
+    bool regWrite{}; // WB Stage
+    bool memRead{}; // MEM Stage
+    bool memWrite{}; // MEM Stage
+    bool aluOp{}; // EX Stage
 };
 
 

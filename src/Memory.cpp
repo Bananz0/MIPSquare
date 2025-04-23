@@ -45,14 +45,17 @@ void Memory::setMemoryValue(const uint32_t address, uint32_t value) {
 }
 
 uint32_t Memory::getMemoryValue(const uint32_t address) const {
-    size_t index = address >> 2; //Divide by 4 cause its word addressed
+    size_t index = address / 4;  // Convert byte address to word index
     if (index >= memory.size()) {
-        throw std::out_of_range("Memory address out of range");
+        std::cerr << "Memory address out of range: 0x" << std::hex << address << std::dec << std::endl;
+        return 0;
     }
+
     if constexpr (DEBUG) {
-        std::cout << "Memory Bank ReadValue at address: " << address
-                  << " (index: " << index << ") = 0x" << std::hex << memory[index] << std::dec << "\n";
+        std::cout << "Memory Bank ReadValue at address: " << address << " (index: " << index << ") = 0x"
+                  << std::hex << memory[index] << std::dec << std::endl;
     }
+
     return memory[index];
 }
 
