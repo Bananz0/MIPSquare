@@ -106,7 +106,6 @@ public:
 private:
     //Current Program Counter
     uint32_t pc = 0;
-
 };
 
 

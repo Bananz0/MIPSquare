@@ -120,7 +120,7 @@ void CPUSimulator::fetch() const {
 
     if constexpr (DEBUG) {
         std::cout << std::endl << "CPU Fetching instruction at PC: 0x" << std::hex << currentPC << std::dec
-               << std::endl;
+                << std::endl;
         std::cout << pipelineStructure->if_id.instruction.toString() << std::endl;
     }
 
@@ -128,6 +128,7 @@ void CPUSimulator::fetch() const {
     pipelineStructure->IF_Done = true;
     std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 }
+
 void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) const {
     if (taken) {
         // Update PC to branch target
@@ -280,7 +281,7 @@ void CPUSimulator::decode() const {
     if constexpr (DEBUG) {
         std::cout << "Decode complete - instruction moving to ID/EX stage" << std::endl;
     }
-    std::cout <<"+++++++++++++++++++++++++++++++++++++"<<std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
 void CPUSimulator::execute() {
@@ -526,7 +527,7 @@ void CPUSimulator::execute() {
     }
 
     pipelineStructure->EX_Done = true;
-    std::cout <<"+++++++++++++++++++++++++++++++++++++"<<std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
 void CPUSimulator::memoryAccess() const {
@@ -545,8 +546,8 @@ void CPUSimulator::memoryAccess() const {
         return;
     }
 
-    std::cout <<"=-==================================="<<std::endl;
-    std::cout <<"=========CPU Memory Access+++++++++++"<<std::endl;
+    std::cout << "=-===================================" << std::endl;
+    std::cout << "=========CPU Memory Access+++++++++++" << std::endl;
 
     uint32_t memoryData = 0;
     uint32_t address = pipelineStructure->ex_mem.alu_result;
@@ -592,8 +593,8 @@ void CPUSimulator::memoryAccess() const {
                 uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
                 uint8_t halfwordOffset = (address & 0x2) >> 1;
                 memoryData = (wordData >> (halfwordOffset * 16)) & 0xFFFF; // No sign extension
-                }
-                break;
+            }
+            break;
 
             default:
                 std::cerr << "Unknown memory read operation for opcode: 0x" <<
@@ -676,7 +677,7 @@ void CPUSimulator::memoryAccess() const {
     }
 
     pipelineStructure->MEM_Done = true;
-    std::cout <<"+++++++++++++++++++++++++++++++++++++"<<std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
 void CPUSimulator::writeBack() const {
@@ -692,8 +693,8 @@ void CPUSimulator::writeBack() const {
         return;
     }
 
-    std::cout <<"=-==================================="<<std::endl;
-    std::cout << "CPU WriteBack"<<std::endl;
+    std::cout << "=-===================================" << std::endl;
+    std::cout << "CPU WriteBack" << std::endl;
 
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
@@ -716,7 +717,7 @@ void CPUSimulator::writeBack() const {
     }
 
     pipelineStructure->WB_Done = true;
-    std::cout <<"+++++++++++++++++++++++++++++++++++++"<<std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++"<< std::endl;
 }
 
 bool CPUSimulator::detectLoadUseHazard() const {
@@ -764,7 +765,6 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
     // Forward from EX/MEM stage (higher priority - more recent values)
     if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
         pipelineStructure->ex_mem.rd_num != 0) {
-
         // Handle forwarding from both ALU results and memory loads
         uint32_t forward_data;
         bool can_forward = true;
@@ -804,8 +804,8 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         pipelineStructure->mem_wb.rd_num != 0) {
 
         uint32_t wb_data = pipelineStructure->mem_wb.memToReg
-                             ? pipelineStructure->mem_wb.memory_read_data
-                             : pipelineStructure->mem_wb.alu_result;
+                               ? pipelineStructure->mem_wb.memory_read_data
+                               : pipelineStructure->mem_wb.alu_result;
 
         // Forward RS value if not already forwarded from EX/MEM
         bool rs_already_forwarded = (pipelineStructure->ex_mem.valid &&
