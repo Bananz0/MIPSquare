@@ -22,8 +22,8 @@ void Register::setValue(const int regIn) {
     return;
   }
   if constexpr (REGISTER_DEBUG) {
-    std::cerr << "Setting value to 0x" << std::hex << regIn << "\n";
-  }
+    std::cout << "Register: " << getRegisterName()
+              << " Setting value to 0x" << std::hex << regIn << "\n";  }
   registerValue = regIn;
 }
 

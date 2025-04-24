@@ -34,7 +34,7 @@ std::vector<uint32_t> Memory::getMemory() {
 void Memory::setMemoryValue(const uint32_t address, uint32_t value) {
     size_t index = address >> 2; //Divide by 4 cause its word addressed
     if (index >= memory.size()) {
-        throw std::out_of_range("Memory address out of range");
+        memory.resize(index + 1);
     }
     if constexpr (MEMORY_DEBUG) {
         std::cout << "Memory Bank SetValue at address: " << address

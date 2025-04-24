@@ -58,7 +58,7 @@ public:
     [[nodiscard]] uint8_t getRs() const;
     [[nodiscard]] uint8_t getRt() const;
     [[nodiscard]] uint8_t getRd() const;
-
+    [[nodiscard]] uint8_t getShamt() const;
     [[nodiscard]] std::string toString() const;
 
     void parseRawInstruction(uint32_t raw);

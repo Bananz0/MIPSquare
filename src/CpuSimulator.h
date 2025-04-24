@@ -35,7 +35,7 @@ public:
     void loadProgramInstructions(const std::vector<uint32_t> &memData);
     static void printInstructions(const std::vector<uint32_t> &instructionVector);
 
-    bool detectLoadUseHazard();
+    bool detectLoadUseHazard() const;
 
     //Pipeline Stages
     void fetch();

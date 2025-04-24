@@ -59,6 +59,10 @@ uint8_t Instruction::getRd() const {
     return static_cast<uint8_t>(this->rd);
 }
 
+uint8_t Instruction::getShamt() const {
+    return this->shamt;
+}
+
 bool Instruction::isRType() const {
     return type == InstructionType::R_Instruciton;
 }

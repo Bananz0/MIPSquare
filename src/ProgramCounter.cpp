@@ -14,7 +14,7 @@ ProgramCounter::~ProgramCounter() = default;
 
 uint32_t ProgramCounter::getPC() const {
     if constexpr (PC_DEBUG) {
-        std::cout << "Curernt Program Counter" << currentPc << std::endl;
+        std::cout << "Current PC accessed." << std::endl;
     }
     return currentPc;
 }
@@ -49,7 +49,7 @@ void ProgramCounter::decrementPC() {
 void ProgramCounter::addPC(const uint32_t amount) {
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {
-            std::cout << "Program Counter Adding by " << amount << std::endl;
+            std::cout << "Program Counter Adding by: " << amount << std::endl;
         }
     }
     nextPc = currentPc + amount;
@@ -58,7 +58,7 @@ void ProgramCounter::addPC(const uint32_t amount) {
 void ProgramCounter::subtractPC(const uint32_t amount) {
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {
-            std::cout << "Program Counter Subtracting by " << amount << std::endl;
+            std::cout << "Program Counter Subtracting by: " << amount << std::endl;
         }
     }
     nextPc = currentPc - amount;
@@ -67,7 +67,7 @@ void ProgramCounter::subtractPC(const uint32_t amount) {
 void ProgramCounter::jumpTo(const uint32_t newPC) {
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {
-            std::cout << "Program Counter Jumping to " << newPC << std::endl;
+            std::cout << "Program Counter Jumping to: " << newPC << std::endl;
         }
     }
     nextPc = newPC;

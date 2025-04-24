@@ -33,6 +33,7 @@ public:
         uint32_t rs_value{};
         uint32_t rt_value{};
         uint32_t immediate{};
+        uint32_t shamt;
 
         //Control Signals
         bool regWrite{};
@@ -44,6 +45,7 @@ public:
         uint8_t aluOp{};
         bool aluSrc{};
         bool valid = true;
+        uint8_t regDst;
     } id_ex;
     struct EX_MEM_Register {
         uint32_t pc{};
@@ -58,12 +60,17 @@ public:
         uint32_t alu_result{};
         uint32_t rs_value{};
         uint32_t rt_value{}; //Also used as write_data for memory
+        uint32_t shamt{};
+        uint32_t immediate{};
 
         // Control signals
         bool regWrite{};
         bool memRead{};
         bool memWrite{};
         bool memToReg{};
+        bool branch{};
+        bool jump{};
+        uint8_t regDst{};
 
         bool valid = true; //For handling stalls/flushes
     } ex_mem;
