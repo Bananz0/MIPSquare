@@ -99,12 +99,14 @@ public:
     bool MEM_Done = false;
     bool WB_Done = false;
 
+    //Pipeline control flags
+    bool stallPipeline = false;
+    bool flushPipeline = false;
+
 private:
     //Current Program Counter
     uint32_t pc = 0;
-    //Pipeline control flags
-    bool stall = false;
-    bool flush = false;
+
 };
 
 

@@ -48,7 +48,7 @@ void RegisterFile::setRegisterValue(uint32_t regNum, uint32_t value) {
 uint32_t RegisterFile::read(RegisterNumber regNum) const {
     const int regPos = static_cast<int>(regNum);
     if constexpr (REGFILE_DEBUG) {
-        std::cout << "Reading from " << registers[regPos].getRegisterName() << "\n";
+        std::cout << "RegisterFile: reading from " << registers[regPos].getRegisterName() << "\n";
     }
     return registers[regPos].getValue();
 }

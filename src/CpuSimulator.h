@@ -22,31 +22,25 @@ typedef enum {
     FETCH, DECODE, EXECUTE, MEMORY_ACCESS, WRITE_BACK, EXIT
     //I will only access the first five and Exit will only be accessed when there is nothing left on the PC
     //Non standard way of coding i think but idc
-} PipelineStages;
-
+} PipelineStages; //Moved away from this
 class CPUSimulator {
 public:
     CPUSimulator();
     ~CPUSimulator();
 
-    static std::vector<uint32_t> loadProgramFromFile();
-
     //Load Instructions
     void loadProgramInstructions(const std::vector<uint32_t> &memData);
     static void printInstructions(const std::vector<uint32_t> &instructionVector);
-
-    bool detectLoadUseHazard() const;
+    [[nodiscard]] bool detectLoadUseHazard() const;
+    static std::vector<uint32_t> loadProgramFromFile();
 
     //Pipeline Stages
-    void fetch();
-
-    void handleBranchHazard(bool taken, uint32_t target_pc);
-
-    void decode();
-    void handleBranchHazard(bool cond, uint32_t uint32) const;
+    void fetch() const;
+    void handleBranchHazard(bool taken, uint32_t target_pc) const;
+    void decode() const;
     void execute();
-    void memoryAccess();
-    void writeBack();
+    void memoryAccess() const;
+    void writeBack() const;
 
     // //Hazard detection and handling
     // bool detectDataHazard();
@@ -57,9 +51,7 @@ public:
     void dataForwarder(uint32_t &input1, uint32_t &input2);
     void startCPU();
     void virtualClock();
-
     void printPipelineState() const;
-
     static std::string getRegisterName(uint8_t regNum);
 
 private:
