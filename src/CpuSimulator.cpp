@@ -907,7 +907,7 @@ void CPUSimulator::virtualClock() {
 
     //Clock Starts as a negative so a cycle will he low - high - low
     if (clock) {
-       // cyclesExecuted++;
+        // cyclesExecuted++;
     }
     clock = !clock;
     // clock = ~clock; This caused some issues with the toggling
