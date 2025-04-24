@@ -152,6 +152,7 @@ void CPUSimulator::decode() {
     bool memWrite = false;
     bool memToReg = false;
     bool branch = false;
+    uint8_t regDst = 0; // 0 for rt (I-type), 1 for rd (R-type), 2 for $ra (JAL)
 
     switch (instr.getOpcode()) {
         case 0x08: //ADDI
