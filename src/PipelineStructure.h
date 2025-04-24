@@ -33,7 +33,7 @@ public:
         uint32_t rs_value{};
         uint32_t rt_value{};
         uint32_t immediate{};
-        uint32_t shamt;
+        uint32_t shamt{};
 
         //Control Signals
         bool regWrite{};
@@ -45,7 +45,7 @@ public:
         uint8_t aluOp{};
         bool aluSrc{};
         bool valid = true;
-        uint8_t regDst;
+        uint8_t regDst{};
     } id_ex;
     struct EX_MEM_Register {
         uint32_t pc{};

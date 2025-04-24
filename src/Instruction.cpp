@@ -35,8 +35,8 @@ RegisterNumber Instruction::getDestReg() const {
     return this->rd;
 }
 
-uint16_t Instruction::getImmediate() const {
-    return this->immediate;
+uint32_t Instruction::getImmediate() const {
+    return static_cast<uint32_t>(this->immediate);
 }
 
 uint32_t Instruction::getJumpTarget() const {

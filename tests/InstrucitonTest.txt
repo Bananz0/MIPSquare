@@ -14,6 +14,13 @@ Instruction instr3(rawInstruction3);
     regfile->setRegisterValue(9, 10);
     regfile->setRegisterValue(10, 20);
 
+        regfile->setRegisterValue(9, 10); // $t1 = 10
+        regfile->setRegisterValue(10, 30); // $t2 = 30
+        // Initialize data memory with some values
+        dataMemory->setMemoryValue(0, 0x12345678); // Store value at address 0
+        dataMemory->setMemoryValue(4, 0xAABBCCDD); // Store value at address 4
+        dataMemory->setMemoryValue(8, 0xDEADBEEF); // Store value at address 8
+
 int main() {
     const OSSimulator glenOS;
     std::cout << instr1.toString() << std::endl;

@@ -8,7 +8,7 @@
 #define DEBUG 1
 #define REGFILE_DEBUG 1
 #define REGISTER_DEBUG 1
-#define INST_DEBUG 1
+#define INST_DEBUG 0
 #define PROG_VERBOSE 1
 #define MEMORY_DEBUG 1
 #define PIPELINE_DEBUG 1
@@ -17,7 +17,5 @@
 #define PC_VERBOSE 1
 #define PC_DEBUG 1
 #define CLOCK_FREQUENCY 1
-
-
 
 #endif //CONFIGUREATION_H

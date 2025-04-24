@@ -62,12 +62,6 @@ void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> &memData)
     }
     instructionMemory->setMemory(memData);
     programLoaded = true;
-    regfile->setRegisterValue(9, 10); // $t1 = 10
-    regfile->setRegisterValue(10, 30); // $t2 = 30
-    // Initialize data memory with some values
-    dataMemory->setMemoryValue(0, 0x12345678); // Store value at address 0
-    dataMemory->setMemoryValue(4, 0xAABBCCDD); // Store value at address 4
-    dataMemory->setMemoryValue(8, 0xDEADBEEF); // Store value at address 8
 }
 
 void CPUSimulator::printInstructions(const std::vector<uint32_t> &instructionVector) {
@@ -119,7 +113,7 @@ void CPUSimulator::fetch() const {
     pipelineStructure->if_id.valid = true;
 
     if constexpr (DEBUG) {
-        std::cout << std::endl << "CPU Fetching instruction at PC: 0x" << std::hex << currentPC << std::dec
+        std::cout << "CPU Fetching instruction at PC: 0x" << std::hex << currentPC << std::dec
                 << std::endl;
         std::cout << pipelineStructure->if_id.instruction.toString() << std::endl;
     }
@@ -192,7 +186,7 @@ void CPUSimulator::decode() const {
     bool memToReg = false;
     bool branch = false;
     bool jump = false;
-    uint8_t regDst = 0; // 0 for rt (I-type), 1 for rd (R-type), 2 for $ra (JAL)
+    uint8_t regDst = 0;
 
     switch (instr.getOpcode()) {
         case 0x08: //ADDI
@@ -232,6 +226,18 @@ void CPUSimulator::decode() const {
                     break;
             }
             break;
+        case 0x02: // J
+            jump = true;
+            break;
+        case 0x03: // JAL
+            jump = true;
+            regWrite = true;
+            regDst = 2; // $ra
+            break;
+        case 0x05: // BNE
+            branch = true;
+            aluOp = 0xC;
+            break;
         case 0x25: //SLTIU
             aluOp = 0x2; //Set less than Immediate unsignd
             aluSrc = true; //Immiedate value
@@ -239,7 +245,11 @@ void CPUSimulator::decode() const {
             regDst = 0; // Destination is rt
             break;
         default:
-            std::cout << "Invalid instruction" << std::endl;
+            std::cerr << "Unsupported opcode: 0x" << std::hex << instr.getOpcode() << std::dec << std::endl;
+            regWrite = false;
+            memWrite = false;
+            branch = false;
+            jump = false;
             break;
     }
 
@@ -344,7 +354,7 @@ void CPUSimulator::execute() {
     bool branchTaken = false;
 
     if constexpr (DEBUG) {
-        std::cout << "\nCPU Executing: " << pipelineStructure->id_ex.instruction.toString() << std::endl;
+        std::cout << "CPU Executing: " << pipelineStructure->id_ex.instruction.toString() << std::endl;
         std::cout << "ALU Inputs: " << aluInput1 << ", " << aluInput2 << std::endl;
     }
 
@@ -354,42 +364,34 @@ void CPUSimulator::execute() {
             aluResult = aluInput1 + aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: Add operation" << std::endl;
             break;
-
         case 0x1: // Subtract
             aluResult = aluInput1 - aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: Subtract operation" << std::endl;
             break;
-
         case 0x3: // AND
             aluResult = aluInput1 & aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: AND operation" << std::endl;
             break;
-
         case 0x4: // SLL (Shift Left Logical)
             aluResult = aluInput1 << aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: SLL operation" << std::endl;
             break;
-
         case 0x5: // OR
             aluResult = aluInput1 | aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: OR operation" << std::endl;
             break;
-
         case 0x6: // XOR
             aluResult = aluInput1 ^ aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: XOR operation" << std::endl;
             break;
-
         case 0x7: // NOR
             aluResult = ~(aluInput1 | aluInput2);
             if constexpr (DEBUG) std::cout << "ALU: NOR operation" << std::endl;
             break;
-
         case 0x8: // SRL (Shift Right Logical)
             aluResult = aluInput1 >> aluInput2;
             if constexpr (DEBUG) std::cout << "ALU: SRL operation" << std::endl;
             break;
-
         case 0x9: // SRA (Shift Right Arithmetic)
             // C++ implementation of arithmetic shift
             if (aluInput1 & 0x80000000) {
@@ -401,63 +403,51 @@ void CPUSimulator::execute() {
             }
             if constexpr (DEBUG) std::cout << "ALU: SRA operation" << std::endl;
             break;
-
         case 0xA: // SLT (Set Less Than - signed)
             aluResult = (static_cast<int32_t>(aluInput1) < static_cast<int32_t>(aluInput2)) ? 1 : 0;
             if constexpr (DEBUG) std::cout << "ALU: SLT operation" << std::endl;
             break;
-
         case 0xB: // SLTU (Set Less Than Unsigned)
             aluResult = (aluInput1 < aluInput2) ? 1 : 0;
             if constexpr (DEBUG) std::cout << "ALU: SLTU operation" << std::endl;
             break;
-
         case 0xC: // Special flag for BNE
             aluResult = aluInput1 - aluInput2;
             branchTaken = (aluResult != 0);
             if constexpr (DEBUG) std::cout << "ALU: BNE comparison" << std::endl;
             break;
-
         case 0xD: // Special flag for BLEZ
             branchTaken = (static_cast<int32_t>(aluInput1) <= 0);
             if constexpr (DEBUG) std::cout << "ALU: BLEZ comparison" << std::endl;
             break;
-
         case 0xE: // Special flag for BGTZ
             branchTaken = (static_cast<int32_t>(aluInput1) > 0);
             if constexpr (DEBUG) std::cout << "ALU: BGTZ comparison" << std::endl;
             break;
-
         case 0xF: // Special flag for JR
             aluResult = aluInput1; // Pass rs value as jump target
             if constexpr (DEBUG) std::cout << "ALU: JR operation" << std::endl;
             break;
-
         case 0x10: // Special flag for BGEZ
             branchTaken = (static_cast<int32_t>(aluInput1) >= 0);
             if constexpr (DEBUG) std::cout << "ALU: BGEZ comparison" << std::endl;
             break;
-
         case 0x11: // Special flag for BLTZ
             branchTaken = (static_cast<int32_t>(aluInput1) < 0);
             if constexpr (DEBUG) std::cout << "ALU: BLTZ comparison" << std::endl;
             break;
-
         case 0x12: // Special flag for J
             // Jump target calculation handled separately
             if constexpr (DEBUG) std::cout << "ALU: J operation" << std::endl;
             break;
-
         case 0x13: // Special flag for JAL
             aluResult = pipelineStructure->id_ex.pc + 8; // Return address (PC+8)
             if constexpr (DEBUG) std::cout << "ALU: JAL operation" << std::endl;
             break;
-
         case 0x14: // Special flag for LUI
             aluResult = aluInput2 << 16; // Shift immediate left by 16 bits
             if constexpr (DEBUG) std::cout << "ALU: LUI operation" << std::endl;
             break;
-
         default:
             std::cerr << "Error: Unknown ALU operation: 0x" << std::hex <<
                     static_cast<int>(pipelineStructure->id_ex.aluOp) << std::dec << std::endl;
@@ -665,7 +655,7 @@ void CPUSimulator::memoryAccess() const {
     pipelineStructure->mem_wb.valid = true;
 
     if constexpr (DEBUG) {
-        std::cout << std::endl << "CPU Memory Access: ";
+        std::cout << "CPU Memory Access: ";
         if (pipelineStructure->ex_mem.memRead) {
             std::cout << "Read data = 0x" << std::hex << memoryData << std::dec;
         } else if (pipelineStructure->ex_mem.memWrite) {
@@ -865,6 +855,7 @@ void CPUSimulator::startCPU() {
         decode();
         fetch();
 
+        cyclesExecuted++;
         programCounter->updatePC();
         virtualClock();
 
@@ -907,7 +898,7 @@ void CPUSimulator::virtualClock() {
 
     //Clock Starts as a negative so a cycle will he low - high - low
     if (clock) {
-        cyclesExecuted++;
+       // cyclesExecuted++;
     }
     clock = !clock;
     // clock = ~clock; This caused some issues with the toggling
