@@ -717,7 +717,7 @@ void CPUSimulator::writeBack() const {
     }
 
     pipelineStructure->WB_Done = true;
-    std::cout << "+++++++++++++++++++++++++++++++++++++"<< std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
 bool CPUSimulator::detectLoadUseHazard() const {
