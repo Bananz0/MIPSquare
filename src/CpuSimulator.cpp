@@ -753,77 +753,86 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
     bool aluSrc = pipelineStructure->id_ex.aluSrc;
 
     // Forward from EX/MEM stage (higher priority - more recent values)
-    if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
-        pipelineStructure->ex_mem.rd_num != 0) {
-        // Handle forwarding from both ALU results and memory loads
+    if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
         uint32_t forward_data;
         bool can_forward = true;
 
-        // For load instructions, we can't forward from EX/MEM unless detected by load-use hazard
+        // For load instructions, we can't forward from EX/MEM stage
         if (pipelineStructure->ex_mem.memToReg && pipelineStructure->ex_mem.memRead) {
-            // We can't forward yet - this is handled by the load-use hazard detection
             can_forward = false;
         } else {
-            // Normal ALU result forwarding
             forward_data = pipelineStructure->ex_mem.alu_result;
         }
 
         if (can_forward) {
-            // RS forwarding
-            if (pipelineStructure->ex_mem.rd_num == rs_num) {
+            // Forward to RS input - checks if EX/MEM destination register matches ID/EX RS
+            if (pipelineStructure->ex_mem.rd_num == rs_num && pipelineStructure->ex_mem.rd_num != 0) {
                 aluInput1 = forward_data;
                 if constexpr (DEBUG) {
                     std::cout << "Forwarding from EX/MEM to RS input: 0x" << std::hex
-                            << aluInput1 << std::dec << std::endl;
+                              << aluInput1 << std::dec << std::endl;
                 }
             }
 
-            // RT forwarding (only if RT is used as input - not for immediate)
-            if (!aluSrc && pipelineStructure->ex_mem.rd_num == rt_num) {
+            // Forward to RT input - checks if EX/MEM destination register matches ID/EX RT
+            // Only forward if RT is used as an input (not immediate)
+            if (!aluSrc && pipelineStructure->ex_mem.rd_num == rt_num && pipelineStructure->ex_mem.rd_num != 0) {
                 aluInput2 = forward_data;
                 if constexpr (DEBUG) {
                     std::cout << "Forwarding from EX/MEM to RT input: 0x" << std::hex
-                            << aluInput2 << std::dec << std::endl;
+                              << aluInput2 << std::dec << std::endl;
                 }
             }
         }
     }
 
     // Forward from MEM/WB stage (lower priority than EX/MEM)
-    if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite &&
-        pipelineStructure->mem_wb.rd_num != 0) {
-
+    if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
+        // Determine the actual data to forward from MEM/WB
         uint32_t wb_data = pipelineStructure->mem_wb.memToReg
-                               ? pipelineStructure->mem_wb.memory_read_data
-                               : pipelineStructure->mem_wb.alu_result;
+                            ? pipelineStructure->mem_wb.memory_read_data
+                            : pipelineStructure->mem_wb.alu_result;
 
-        // Forward RS value if not already forwarded from EX/MEM
+        // Forward to RS (register source) if:
+        // 1. Not already forwarded from EX/MEM
+        // 2. MEM/WB destination register matches RS
         bool rs_already_forwarded = (pipelineStructure->ex_mem.valid &&
-                                     pipelineStructure->ex_mem.regWrite &&
-                                     !pipelineStructure->ex_mem.memToReg &&
-                                     pipelineStructure->ex_mem.rd_num == rs_num);
+                                    pipelineStructure->ex_mem.regWrite &&
+                                    !pipelineStructure->ex_mem.memToReg &&
+                                    pipelineStructure->ex_mem.rd_num == rs_num);
 
-        if (!rs_already_forwarded && pipelineStructure->mem_wb.rd_num == rs_num) {
+        // Critical fix! Check if the destination register (rt for I-type or rd for R-type) matches rs_num
+        if (!rs_already_forwarded && pipelineStructure->mem_wb.rd_num == rs_num &&
+            pipelineStructure->mem_wb.rd_num != 0) {
             aluInput1 = wb_data;
             if constexpr (DEBUG) {
                 std::cout << "Forwarding from MEM/WB to RS input: 0x" << std::hex
-                        << aluInput1 << std::dec << std::endl;
+                         << aluInput1 << std::dec << std::endl;
             }
         }
 
-        // Forward RT value if not already forwarded from EX/MEM and not using immediate
+        // Forward to RT (register target) if:
+        // 1. Not already forwarded from EX/MEM
+        // 2. Not using immediate (aluSrc flag)
+        // 3. MEM/WB destination register matches RT
         bool rt_already_forwarded = (pipelineStructure->ex_mem.valid &&
-                                     pipelineStructure->ex_mem.regWrite &&
-                                     !pipelineStructure->ex_mem.memToReg &&
-                                     pipelineStructure->ex_mem.rd_num == rt_num);
+                                    pipelineStructure->ex_mem.regWrite &&
+                                    !pipelineStructure->ex_mem.memToReg &&
+                                    pipelineStructure->ex_mem.rd_num == rt_num);
 
-        if (!aluSrc && !rt_already_forwarded && pipelineStructure->mem_wb.rd_num == rt_num) {
+        if (!aluSrc && !rt_already_forwarded && pipelineStructure->mem_wb.rd_num == rt_num &&
+            pipelineStructure->mem_wb.rd_num != 0) {
             aluInput2 = wb_data;
             if constexpr (DEBUG) {
                 std::cout << "Forwarding from MEM/WB to RT input: 0x" << std::hex
-                        << aluInput2 << std::dec << std::endl;
+                         << aluInput2 << std::dec << std::endl;
             }
         }
+    }
+
+    // Add debug breakpoint if needed
+    if (this->cyclesExecuted == 3) {
+        // Trigger a breakpoint for debugging specific instruction
     }
 }
 

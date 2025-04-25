@@ -25,6 +25,10 @@ uint32_t RegisterFile::getRegisterValue(uint32_t regNum) const {
         std::cerr << "Error: Invalid register number: " << regNum << std::endl;
         return 0;
     }
+    //Debug
+    if constexpr (REGFILE_DEBUG) {
+        std::cout << "RegisterFile: Reading " << registers[regNum].getRegisterName() << "\n";
+    }
 
     const auto reg = static_cast<RegisterNumber>(regNum);
     return read(reg);
@@ -39,6 +43,11 @@ void RegisterFile::setRegisterValue(uint32_t regNum, uint32_t value) {
 
     if (regNum == 0) {
         return;
+    }
+
+    //Debug
+    if constexpr (REGFILE_DEBUG) {
+        std::cout << "RegisterFile: Setting " << registers[regNum].getRegisterName() << " to 0x" << std::hex << value << "\n";
     }
 
     const auto reg = static_cast<RegisterNumber>(regNum);

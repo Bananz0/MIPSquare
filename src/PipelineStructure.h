@@ -13,8 +13,6 @@ class PipelineStructure {
 public:
     PipelineStructure();
     ~PipelineStructure();
-
-    //Pipeline registers
     struct IF_ID_Register {
         uint32_t pc{};
         Instruction instruction;
@@ -23,19 +21,15 @@ public:
     struct ID_EX_Register {
         uint32_t pc{};
         Instruction instruction;
-
-        //Register identifiers for hazard detection
         uint32_t rs_num{};
         uint32_t rt_num{};
         uint32_t rd_num{};
-
-        //Register values
         uint32_t rs_value{};
         uint32_t rt_value{};
         uint32_t immediate{};
         uint32_t shamt{};
-
-        //Control Signals
+        uint32_t forwarded_rs_value{};
+        uint32_t forwarded_rt_value{};
         bool regWrite{};
         bool memRead{};
         bool memWrite{};
@@ -49,21 +43,15 @@ public:
     } id_ex;
     struct EX_MEM_Register {
         uint32_t pc{};
-        Instruction instruction; // Keep full instruction object
-
-        //Register identifiers (still needed for forwarding)
+        Instruction instruction;
         uint32_t rs_num{};
         uint32_t rt_num{};
-        uint32_t rd_num{}; // destination register
-
-        // Results and values
+        uint32_t rd_num{};
         uint32_t alu_result{};
         uint32_t rs_value{};
-        uint32_t rt_value{}; //Also used as write_data for memory
+        uint32_t rt_value{};
         uint32_t shamt{};
         uint32_t immediate{};
-
-        // Control signals
         bool regWrite{};
         bool memRead{};
         bool memWrite{};
@@ -71,43 +59,38 @@ public:
         bool branch{};
         bool jump{};
         uint8_t regDst{};
-
-        bool valid = true; //For handling stalls/flushes
+        bool valid = true;
     } ex_mem;
     struct MEM_WB_Register {
         uint32_t pc{};
         Instruction instruction;
-
-        // Register identifiers
-        uint32_t rd_num{}; // Destination register
-
-        // Results
+        uint32_t rs_num{};
+        uint32_t rt_num{};
+        uint32_t rd_num{};
         uint32_t alu_result{};
         uint32_t memory_read_data{};
-
-        // Control signals
+        uint32_t rs_value{};
+        uint32_t rt_value{};
         bool regWrite{};
-        bool memToReg{}; // Select between ALU result and memory data
-
-        bool valid = true; // For handling stalls/flushes
+        bool memToReg{};
+        bool valid = true;
     } mem_wb;
-
-    //Pipelien Flags
     bool IF_Done = false;
     bool ID_Done = false;
     bool EX_Done = false;
     bool MEM_Done = false;
     bool WB_Done = false;
-
-    //Pipeline control flags
     bool stallPipeline = false;
     bool flushPipeline = false;
-
+    void updatePipeline();
+    void stall();
+    void flush();
 private:
-    //Current Program Counter
     uint32_t pc = 0;
+    void updateIF_ID();
+    void updateID_EX();
+    void updateEX_MEM();
+    void updateMEM_WB();
 };
-
-
 
 #endif //PIPELINESTRUCTURE_H
