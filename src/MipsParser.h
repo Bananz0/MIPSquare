@@ -294,7 +294,7 @@ public:
                     target = std::stoul(targetStr);
                 }
             } else {
-            // Label - look up in label table
+                // Label - look up in label table
             int labelAddr = findLabelAddress(targetStr);
             if (labelAddr != -1) {
                 target = labelAddr;
