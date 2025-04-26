@@ -293,7 +293,7 @@ public:
                 } else {
                     target = std::stoul(targetStr);
                 }
-        } else {
+            } else {
             // Label - look up in label table
             int labelAddr = findLabelAddress(targetStr);
             if (labelAddr != -1) {
