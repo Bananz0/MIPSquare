@@ -1,0 +1,9 @@
+// Compute sum of numbers from 1 to 10
+addi t0, zero, 0     // Initialize sum
+addi t1, zero, 1     // Counter starts at 1
+addi t2, zero, 10    // Limit
+sum_loop:
+  add t0, t0, t1     // Add current number to sum
+  addi t1, t1, 1     // Increment counter
+  ble t1, t2, sum_loop // Loop if counter <= limit
+  add s0, zero, t0   // Store final result

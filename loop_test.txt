@@ -1,0 +1,7 @@
+// Simple loop that counts from 0 to 5
+addi t0, zero, 0     // Initialize counter
+addi t1, zero, 5     // Loop limit
+loop_start:           // Loop label
+addi t0, t0, 1       // Increment counter
+bne t0, t1, loop_start // Loop if not equal
+add s0, t0, zero     // Store result
