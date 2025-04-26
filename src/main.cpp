@@ -7,12 +7,9 @@
 MipsParser parser;
 
 
-
-
 int main() {
     // const OSSimulator glenOS;
     // glenOS.startSimulation();
-
 
 
     // Parse the assembly file
@@ -77,9 +74,8 @@ int main() {
     std::cout << "Generated machine code for complex program:\n";
     for (size_t i = 0; i < complexMachineCode.size(); i++) {
         std::cout << "Instruction " << i << ": 0x" << std::hex << complexMachineCode[i]
-                  << std::dec << std::endl;
+                << std::dec << std::endl;
     }
 
     return 0;
-
 }
