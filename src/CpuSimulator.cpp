@@ -310,6 +310,17 @@ void CPUSimulator::execute() {
         }
     }
 
+    // Debug ID/EX register values
+    std::cout << "ID/EX Stage Register Values:" << std::endl;
+    std::cout << "  RS NUM: " << pipelineStructure->id_ex.rs_num << " (register: " << getRegisterName(pipelineStructure->id_ex.rs_num) << ")" << std::endl;
+    std::cout << "  RS VALUE: " << pipelineStructure->id_ex.rs_value << std::endl;
+    std::cout << "  RT NUM: " << pipelineStructure->id_ex.rt_num << " (register: " << getRegisterName(pipelineStructure->id_ex.rt_num) << ")" << std::endl;
+    std::cout << "  RT VALUE: " << pipelineStructure->id_ex.rt_value << std::endl;
+    std::cout << "  RD NUM: " << pipelineStructure->id_ex.rd_num << " (register: " << getRegisterName(pipelineStructure->id_ex.rd_num) << ")" << std::endl;
+    std::cout << "  ALU SRC: " << (pipelineStructure->id_ex.aluSrc ? "Immediate" : "Register") << std::endl;
+    std::cout << "  IMMEDIATE: " << pipelineStructure->id_ex.immediate << std::endl;
+
+
     // Get ALU inputs with forwarding
     uint32_t aluInput1 = pipelineStructure->id_ex.rs_value;
     uint32_t aluInput2;
@@ -683,8 +694,17 @@ void CPUSimulator::writeBack() const {
         return;
     }
 
-    std::cout << "=-===================================" << std::endl;
-    std::cout << "CPU WriteBack" << std::endl;
+    std::cout << "=-===========-=======================" << std::endl;
+    std::cout << "============-CPU WriteBack===========" << std::endl;
+
+    // Debug MEM/WB register values
+    std::cout << "MEM/WB Stage Register Values:" << std::endl;
+    std::cout << "  RegWrite: " << pipelineStructure->mem_wb.regWrite << std::endl;
+    std::cout << "  RD NUM: " << pipelineStructure->mem_wb.rd_num << " (register: " << getRegisterName(pipelineStructure->mem_wb.rd_num) << ")" << std::endl;
+    std::cout << "  MemToReg: " << pipelineStructure->mem_wb.memToReg << std::endl;
+    std::cout << "  ALU Result: " << pipelineStructure->mem_wb.alu_result << std::endl;
+    std::cout << "  Memory Data: " << pipelineStructure->mem_wb.memory_read_data << std::endl;
+
 
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
@@ -748,92 +768,79 @@ bool CPUSimulator::detectLoadUseHazard() const {
 }
 
 void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
-    uint32_t rs_num = pipelineStructure->id_ex.rs_num;
-    uint32_t rt_num = pipelineStructure->id_ex.rt_num;
+    // Get the actual source registers from IF/ID stage instead of ID/EX
+    uint32_t rs_num = pipelineStructure->if_id.instruction.getRs();
+    uint32_t rt_num = pipelineStructure->if_id.instruction.getRt();
     bool aluSrc = pipelineStructure->id_ex.aluSrc;
 
-    // Forward from EX/MEM stage (higher priority - more recent values)
-    if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
-        uint32_t forward_data;
-        bool can_forward = true;
+    std::cout << "DATA FORWARDING DEBUG:" << std::endl;
+    std::cout << "  RS_NUM: " << rs_num << " (register: " << getRegisterName(rs_num) << ")" << std::endl;
+    std::cout << "  RT_NUM: " << rt_num << " (register: " << getRegisterName(rt_num) << ")" << std::endl;
+    std::cout << "  ALU_SRC: " << (aluSrc ? "Immediate" : "Register") << std::endl;
+    std::cout << "  Initial ALU Inputs: " << aluInput1 << ", " << aluInput2 << std::endl;
+    std::cout << "  Current Instruction: " << pipelineStructure->if_id.instruction.toString() << std::endl;
 
-        // For load instructions, we can't forward from EX/MEM stage
+    // Forward from MEM/WB stage first
+    if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
+        uint32_t wb_data = pipelineStructure->mem_wb.memToReg
+                        ? pipelineStructure->mem_wb.memory_read_data
+                        : pipelineStructure->mem_wb.alu_result;
+
+        std::cout << "  MEM/WB Instruction: " << pipelineStructure->mem_wb.instruction.toString() << std::endl;
+        std::cout << "  MEM/WB: Valid=1, RegWrite=1, Target Register="
+                  << getRegisterName(pipelineStructure->mem_wb.rd_num)
+                  << " (value: " << wb_data << ")" << std::endl;
+
+        // Forward to RS input
+        if (pipelineStructure->mem_wb.rd_num == rs_num) {
+            aluInput1 = wb_data;
+            std::cout << "  Forwarding from MEM/WB to RS input: 0x" << std::hex << wb_data << std::dec << std::endl;
+        } else {
+            std::cout << "  No forwarding from MEM/WB to RS: "
+                      << pipelineStructure->mem_wb.rd_num << " != " << rs_num << std::endl;
+        }
+
+        // Forward to RT input if not using immediate
+        if (!aluSrc && pipelineStructure->mem_wb.rd_num == rt_num) {
+            aluInput2 = wb_data;
+            std::cout << "  Forwarding from MEM/WB to RT input: 0x" << std::hex << wb_data << std::dec << std::endl;
+        }
+    }
+
+    // Then check EX/MEM forwarding
+    if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
+        bool can_forward = true;
+        uint32_t forward_data = pipelineStructure->ex_mem.alu_result;
+
+        // Check for load instruction
         if (pipelineStructure->ex_mem.memToReg && pipelineStructure->ex_mem.memRead) {
             can_forward = false;
-        } else {
-            forward_data = pipelineStructure->ex_mem.alu_result;
+            std::cout << "  EX/MEM: Cannot forward from load instruction (memory read in progress)" << std::endl;
         }
+
+        std::cout << "  EX/MEM Instruction: " << pipelineStructure->ex_mem.instruction.toString() << std::endl;
+        std::cout << "  EX/MEM: Valid=1, RegWrite=1, CanForward=" << can_forward
+                  << ", Target Register=" << getRegisterName(pipelineStructure->ex_mem.rd_num)
+                  << " (value: " << forward_data << ")" << std::endl;
 
         if (can_forward) {
-            // Forward to RS input - checks if EX/MEM destination register matches ID/EX RS
-            if (pipelineStructure->ex_mem.rd_num == rs_num && pipelineStructure->ex_mem.rd_num != 0) {
+            // Forward to RS input
+            if (pipelineStructure->ex_mem.rd_num == rs_num) {
                 aluInput1 = forward_data;
-                if constexpr (DEBUG) {
-                    std::cout << "Forwarding from EX/MEM to RS input: 0x" << std::hex
-                              << aluInput1 << std::dec << std::endl;
-                }
+                std::cout << "  Forwarding from EX/MEM to RS input: 0x" << std::hex << forward_data << std::dec
+                          << " (overriding any MEM/WB forwarding)" << std::endl;
             }
 
-            // Forward to RT input - checks if EX/MEM destination register matches ID/EX RT
-            // Only forward if RT is used as an input (not immediate)
-            if (!aluSrc && pipelineStructure->ex_mem.rd_num == rt_num && pipelineStructure->ex_mem.rd_num != 0) {
+            // Forward to RT input if not using immediate
+            if (!aluSrc && pipelineStructure->ex_mem.rd_num == rt_num) {
                 aluInput2 = forward_data;
-                if constexpr (DEBUG) {
-                    std::cout << "Forwarding from EX/MEM to RT input: 0x" << std::hex
-                              << aluInput2 << std::dec << std::endl;
-                }
+                std::cout << "  Forwarding from EX/MEM to RT input: 0x" << std::hex << forward_data << std::dec
+                          << " (overriding any MEM/WB forwarding)" << std::endl;
             }
         }
     }
 
-    // Forward from MEM/WB stage (lower priority than EX/MEM)
-    if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
-        // Determine the actual data to forward from MEM/WB
-        uint32_t wb_data = pipelineStructure->mem_wb.memToReg
-                            ? pipelineStructure->mem_wb.memory_read_data
-                            : pipelineStructure->mem_wb.alu_result;
-
-        // Forward to RS (register source) if:
-        // 1. Not already forwarded from EX/MEM
-        // 2. MEM/WB destination register matches RS
-        bool rs_already_forwarded = (pipelineStructure->ex_mem.valid &&
-                                    pipelineStructure->ex_mem.regWrite &&
-                                    !pipelineStructure->ex_mem.memToReg &&
-                                    pipelineStructure->ex_mem.rd_num == rs_num);
-
-        // Critical fix! Check if the destination register (rt for I-type or rd for R-type) matches rs_num
-        if (!rs_already_forwarded && pipelineStructure->mem_wb.rd_num == rs_num &&
-            pipelineStructure->mem_wb.rd_num != 0) {
-            aluInput1 = wb_data;
-            if constexpr (DEBUG) {
-                std::cout << "Forwarding from MEM/WB to RS input: 0x" << std::hex
-                         << aluInput1 << std::dec << std::endl;
-            }
-        }
-
-        // Forward to RT (register target) if:
-        // 1. Not already forwarded from EX/MEM
-        // 2. Not using immediate (aluSrc flag)
-        // 3. MEM/WB destination register matches RT
-        bool rt_already_forwarded = (pipelineStructure->ex_mem.valid &&
-                                    pipelineStructure->ex_mem.regWrite &&
-                                    !pipelineStructure->ex_mem.memToReg &&
-                                    pipelineStructure->ex_mem.rd_num == rt_num);
-
-        if (!aluSrc && !rt_already_forwarded && pipelineStructure->mem_wb.rd_num == rt_num &&
-            pipelineStructure->mem_wb.rd_num != 0) {
-            aluInput2 = wb_data;
-            if constexpr (DEBUG) {
-                std::cout << "Forwarding from MEM/WB to RT input: 0x" << std::hex
-                         << aluInput2 << std::dec << std::endl;
-            }
-        }
-    }
-
-    // Add debug breakpoint if needed
-    if (this->cyclesExecuted == 3) {
-        // Trigger a breakpoint for debugging specific instruction
-    }
+    std::cout << "  Final ALU Inputs: " << aluInput1 << ", " << aluInput2 << std::endl;
 }
 
 void CPUSimulator::startCPU() {
