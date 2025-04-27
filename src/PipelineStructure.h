@@ -17,6 +17,8 @@ public:
         uint32_t pc{};
         Instruction instruction;
         bool valid = true;
+
+        PipelineStructure::IF_ID_Register &operator=(const PipelineStructure::IF_ID_Register &other);
     } if_id;
     struct ID_EX_Register {
         uint32_t pc{};
@@ -40,6 +42,10 @@ public:
         bool aluSrc{};
         bool valid = true;
         uint8_t regDst{};
+
+        PipelineStructure::ID_EX_Register &operator=(const PipelineStructure::ID_EX_Register &other);
+
+        PipelineStructure::ID_EX_Register &operator=(const PipelineStructure::IF_ID_Register &other);
     } id_ex;
     struct EX_MEM_Register {
         uint32_t pc{};
@@ -60,6 +66,10 @@ public:
         bool jump{};
         uint8_t regDst{};
         bool valid = true;
+
+        PipelineStructure::EX_MEM_Register &operator=(const PipelineStructure::EX_MEM_Register &other);
+
+        PipelineStructure::EX_MEM_Register &operator=(const PipelineStructure::ID_EX_Register &other);
     } ex_mem;
     struct MEM_WB_Register {
         uint32_t pc{};
@@ -74,6 +84,10 @@ public:
         bool regWrite{};
         bool memToReg{};
         bool valid = true;
+
+        PipelineStructure::MEM_WB_Register &operator=(const PipelineStructure::MEM_WB_Register &other);
+
+        PipelineStructure::MEM_WB_Register &operator=(const PipelineStructure::EX_MEM_Register &other);
     } mem_wb;
     bool IF_Done = false;
     bool ID_Done = false;
@@ -82,15 +96,8 @@ public:
     bool WB_Done = false;
     bool stallPipeline = false;
     bool flushPipeline = false;
-    void updatePipeline();
-    void stall();
-    void flush();
 private:
     uint32_t pc = 0;
-    void updateIF_ID();
-    void updateID_EX();
-    void updateEX_MEM();
-    void updateMEM_WB();
 };
 
 #endif //PIPELINESTRUCTURE_H

@@ -13,7 +13,7 @@ add t1 s2 s3
 //add t1 t2 s2 000000(R) 01001(9)[$t1] 01010(10)[$t2] 10010(18)[$s2] 00000 100000
 //add t1 s2 s3 000000(R) 01001(9)[$t1] 10010(18)[$s2] 10011(19)[$s3] 00000 100000
 
-000000 01001 01010 10010 00000 100000
+//000000 01001 01010 10010 00000 100000
 // Instruction Format Shortcuts
 // R 000000_sssss_ttttt_ddddd_hhhhh_ffffff
 //   opcode   rs     rt     rd   shamt  funct

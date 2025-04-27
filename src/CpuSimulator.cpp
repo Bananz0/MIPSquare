@@ -4,6 +4,8 @@
 
 #include "CpuSimulator.h"
 
+#include "MipsParser.h"
+
 CPUSimulator:: CPUSimulator() :
     regfile(new RegisterFile()),
     instructionMemory(new Memory()),
@@ -35,25 +37,54 @@ CPUSimulator::~CPUSimulator() {
 
 std::vector<uint32_t> CPUSimulator::loadProgramFromFile() {
     std::vector<uint32_t> MIPSProgram;
-    //Open the MIPS Program File
-    std::ifstream programRaw("MIPSProgram.txt");
-    if (!programRaw.is_open()) {
-        std::cerr << "Error: Could not open MIPSProgram.txt\n" << std::endl;
+    MipsParser parser;
+    // Load and parse the assembly file into machine code
+    std::vector<uint32_t> machineCode = parser.loadProgramFromFile("MIPSProgram.txt");
+
+    if (machineCode.empty()) {
+        std::cerr << "Error: Failed to parse MIPS program or file is empty" << std::endl;
         return {};
     }
-    int myText;
-    while (programRaw >> std::hex >> myText) {
-        MIPSProgram.push_back(myText);
-        // if constexpr (PROG_VERBOSE) {
-        //     printf("Read Value (HEX): 0x%x\n", myText);
-        // }
-    }
+
+    // Print the parsed instructions for debugging
     if constexpr (PROG_VERBOSE) {
-        printInstructions(MIPSProgram);
+        std::cout << "===============================" << std::endl;
+        std::cout << "Assembly to Machine Code Translation" << std::endl;
+        std::cout << "===============================" << std::endl;
+
+        for (size_t i = 0; i < machineCode.size(); i++) {
+            std::cout << "Instruction " << i << ": 0x" << std::hex << machineCode[i] << std::dec << std::endl;
+
+            // Create an instruction object to decode and display
+            Instruction instr(machineCode[i]);
+            std::cout << "  Decoded: " << instr.toString() << std::endl;
+            std::cout << "  Binary: " << std::bitset<32>(machineCode[i]) << std::endl;
+            std::cout << std::endl;
+        }
+
+        std::cout << "===============================" << std::endl;
     }
-    //Close the file
-    programRaw.close();
-    return MIPSProgram;
+
+    return machineCode;
+    // //Open the MIPS Program File
+    // std::ifstream programRaw("MIPSProgram.txt");
+    // if (!programRaw.is_open()) {
+    //     std::cerr << "Error: Could not open MIPSProgram.txt\n" << std::endl;
+    //     return {};
+    // }
+    // int myText;
+    // while (programRaw >> std::hex >> myText) {
+    //     MIPSProgram.push_back(myText);
+    //     // if constexpr (PROG_VERBOSE) {
+    //     //     printf("Read Value (HEX): 0x%x\n", myText);
+    //     // }
+    // }
+    // if constexpr (PROG_VERBOSE) {
+    //     printInstructions(MIPSProgram);
+    // }
+    // //Close the file
+    // programRaw.close();
+    // return MIPSProgram;
 }
 
 void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> &memData) {
@@ -125,14 +156,14 @@ void CPUSimulator::fetch() const {
 
 void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) const {
     if (taken) {
-        // Update PC to branch target
+        //Update PC to branch target
         programCounter->setPC(target_pc);
 
-        // Flush pipeline stages
+        //Flush pipeline stages
         pipelineStructure->if_id.valid = false; // Invalidate IF/ID
         pipelineStructure->id_ex.valid = false; // Also invalidate ID/EX for proper flush
 
-        // Reset the pipeline stage flags for flushed instructions
+        //Reset the pipeline stage flags for flushed instructions
         pipelineStructure->IF_Done = false;
         pipelineStructure->ID_Done = false;
 
@@ -145,7 +176,7 @@ void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) const {
 
 
 void CPUSimulator::decode() const {
-    // If a stall is active, maintain the current state and don't progress
+    // If a stall is active, maintain the state and don't progress
     if (pipelineStructure->stallPipeline) {
         // Don't update ID/EX when stalled - preserve current IF/ID state
         if constexpr (DEBUG) {
@@ -176,6 +207,9 @@ void CPUSimulator::decode() const {
         std::cout << "Decode: reading from $" << getRegisterName(instr.getRs()) << std::endl;
         std::cout << "Decode: reading from $" << getRegisterName(instr.getRt()) << std::endl;
     }
+
+    pipelineStructure->id_ex = pipelineStructure->if_id;
+
 
     // Initialize all the values
     uint8_t aluOp = 0;
@@ -310,6 +344,13 @@ void CPUSimulator::execute() {
         }
     }
 
+    uint32_t destReg = alu->getDestinationRegister(
+     pipelineStructure->id_ex.regDst,
+     pipelineStructure->id_ex.rt_num,
+     pipelineStructure->id_ex.rd_num
+     );
+
+
     // Debug ID/EX register values
     std::cout << "ID/EX Stage Register Values:" << std::endl;
     std::cout << "  RS NUM: " << pipelineStructure->id_ex.rs_num << " (register: " << getRegisterName(
@@ -347,126 +388,15 @@ void CPUSimulator::execute() {
     // Apply forwarding logic
     dataForwarder(aluInput1, aluInput2);
 
-    // Determine register destination based on regDst control
-    uint32_t destReg;
-    switch (pipelineStructure->id_ex.regDst) {
-        case 0: // Use rt field
-            destReg = pipelineStructure->id_ex.rt_num;
-            break;
-        case 1: // Use rd field (R-type)
-            destReg = pipelineStructure->id_ex.rd_num;
-            break;
-        case 2: // Use $ra (31) for JAL
-            destReg = 31; // $ra register
-            break;
-        default:
-            destReg = 0; // $zero as failsafe
-    }
-
-    // Perform ALU operation
-    uint32_t aluResult = 0;
+    // Execute ALU operation
     bool branchTaken = false;
-
-    if constexpr (DEBUG) {
-        std::cout << "CPU Executing: " << pipelineStructure->id_ex.instruction.toString() << std::endl;
-        std::cout << "ALU Inputs: " << aluInput1 << ", " << aluInput2 << std::endl;
-    }
-
-    // Expanded ALU operations
-    switch (pipelineStructure->id_ex.aluOp) {
-        case 0x0: // Add
-            aluResult = aluInput1 + aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: Add operation" << std::endl;
-            break;
-        case 0x1: // Subtract
-            aluResult = aluInput1 - aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: Subtract operation" << std::endl;
-            break;
-        case 0x3: // AND
-            aluResult = aluInput1 & aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: AND operation" << std::endl;
-            break;
-        case 0x4: // SLL (Shift Left Logical)
-            aluResult = aluInput1 << aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: SLL operation" << std::endl;
-            break;
-        case 0x5: // OR
-            aluResult = aluInput1 | aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: OR operation" << std::endl;
-            break;
-        case 0x6: // XOR
-            aluResult = aluInput1 ^ aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: XOR operation" << std::endl;
-            break;
-        case 0x7: // NOR
-            aluResult = ~(aluInput1 | aluInput2);
-            if constexpr (DEBUG) std::cout << "ALU: NOR operation" << std::endl;
-            break;
-        case 0x8: // SRL (Shift Right Logical)
-            aluResult = aluInput1 >> aluInput2;
-            if constexpr (DEBUG) std::cout << "ALU: SRL operation" << std::endl;
-            break;
-        case 0x9: // SRA (Shift Right Arithmetic)
-            // C++ implementation of arithmetic shift
-            if (aluInput1 & 0x80000000) {
-                // If MSB is 1
-                uint32_t mask = ~((1 << (32 - aluInput2)) - 1);
-                aluResult = (aluInput1 >> aluInput2) | mask;
-            } else {
-                aluResult = aluInput1 >> aluInput2;
-            }
-            if constexpr (DEBUG) std::cout << "ALU: SRA operation" << std::endl;
-            break;
-        case 0xA: // SLT (Set Less Than - signed)
-            aluResult = (static_cast<int32_t>(aluInput1) < static_cast<int32_t>(aluInput2)) ? 1 : 0;
-            if constexpr (DEBUG) std::cout << "ALU: SLT operation" << std::endl;
-            break;
-        case 0xB: // SLTU (Set Less Than Unsigned)
-            aluResult = (aluInput1 < aluInput2) ? 1 : 0;
-            if constexpr (DEBUG) std::cout << "ALU: SLTU operation" << std::endl;
-            break;
-        case 0xC: // Special flag for BNE
-            aluResult = aluInput1 - aluInput2;
-            branchTaken = (aluResult != 0);
-            if constexpr (DEBUG) std::cout << "ALU: BNE comparison" << std::endl;
-            break;
-        case 0xD: // Special flag for BLEZ
-            branchTaken = (static_cast<int32_t>(aluInput1) <= 0);
-            if constexpr (DEBUG) std::cout << "ALU: BLEZ comparison" << std::endl;
-            break;
-        case 0xE: // Special flag for BGTZ
-            branchTaken = (static_cast<int32_t>(aluInput1) > 0);
-            if constexpr (DEBUG) std::cout << "ALU: BGTZ comparison" << std::endl;
-            break;
-        case 0xF: // Special flag for JR
-            aluResult = aluInput1; // Pass rs value as jump target
-            if constexpr (DEBUG) std::cout << "ALU: JR operation" << std::endl;
-            break;
-        case 0x10: // Special flag for BGEZ
-            branchTaken = (static_cast<int32_t>(aluInput1) >= 0);
-            if constexpr (DEBUG) std::cout << "ALU: BGEZ comparison" << std::endl;
-            break;
-        case 0x11: // Special flag for BLTZ
-            branchTaken = (static_cast<int32_t>(aluInput1) < 0);
-            if constexpr (DEBUG) std::cout << "ALU: BLTZ comparison" << std::endl;
-            break;
-        case 0x12: // Special flag for J
-            // Jump target calculation handled separately
-            if constexpr (DEBUG) std::cout << "ALU: J operation" << std::endl;
-            break;
-        case 0x13: // Special flag for JAL
-            aluResult = pipelineStructure->id_ex.pc + 8; // Return address (PC+8)
-            if constexpr (DEBUG) std::cout << "ALU: JAL operation" << std::endl;
-            break;
-        case 0x14: // Special flag for LUI
-            aluResult = aluInput2 << 16; // Shift immediate left by 16 bits
-            if constexpr (DEBUG) std::cout << "ALU: LUI operation" << std::endl;
-            break;
-        default:
-            std::cerr << "Error: Unknown ALU operation: 0x" << std::hex <<
-                    static_cast<int>(pipelineStructure->id_ex.aluOp) << std::dec << std::endl;
-            break;
-    }
+    uint32_t aluResult = alu->execute(
+        pipelineStructure->id_ex.aluOp,
+        aluInput1,
+        aluInput2,
+        pipelineStructure->id_ex.pc,
+        branchTaken
+    );
 
     if constexpr (DEBUG) {
         std::cout << "ALU Result: " << std::hex << aluResult << std::dec << std::endl;
@@ -772,9 +702,9 @@ bool CPUSimulator::detectLoadUseHazard() const {
 }
 
 void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
-    // Get the actual source registers from IF/ID stage instead of ID/EX
-    uint32_t rs_num = pipelineStructure->if_id.instruction.getRs();
-    uint32_t rt_num = pipelineStructure->if_id.instruction.getRt();
+    // Get the actual source registers from ID/EX stage
+    uint32_t rs_num = pipelineStructure->id_ex.rs_num;
+    uint32_t rt_num = pipelineStructure->id_ex.rt_num;
     bool aluSrc = pipelineStructure->id_ex.aluSrc;
 
     std::cout << "DATA FORWARDING DEBUG:" << std::endl;
@@ -782,36 +712,35 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
     std::cout << "  RT_NUM: " << rt_num << " (register: " << getRegisterName(rt_num) << ")" << std::endl;
     std::cout << "  ALU_SRC: " << (aluSrc ? "Immediate" : "Register") << std::endl;
     std::cout << "  Initial ALU Inputs: " << aluInput1 << ", " << aluInput2 << std::endl;
-    std::cout << "  Current Instruction: " << pipelineStructure->if_id.instruction.toString() << std::endl;
 
     // Forward from MEM/WB stage first
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
         uint32_t wb_data = pipelineStructure->mem_wb.memToReg
-                               ? pipelineStructure->mem_wb.memory_read_data
-                               : pipelineStructure->mem_wb.alu_result;
+                             ? pipelineStructure->mem_wb.memory_read_data
+                             : pipelineStructure->mem_wb.alu_result;
 
         std::cout << "  MEM/WB Instruction: " << pipelineStructure->mem_wb.instruction.toString() << std::endl;
         std::cout << "  MEM/WB: Valid=1, RegWrite=1, Target Register="
                 << getRegisterName(pipelineStructure->mem_wb.rd_num)
                 << " (value: " << wb_data << ")" << std::endl;
 
-        // Forward to RS input
-        if (pipelineStructure->mem_wb.rd_num == rs_num) {
+        // Forward to RS input if we need this register's value
+        if (rs_num == pipelineStructure->mem_wb.rd_num && rs_num != 0) {
             aluInput1 = wb_data;
             std::cout << "  Forwarding from MEM/WB to RS input: 0x" << std::hex << wb_data << std::dec << std::endl;
         } else {
             std::cout << "  No forwarding from MEM/WB to RS: "
-                    << pipelineStructure->mem_wb.rd_num << " != " << rs_num << std::endl;
+                    << rs_num << " != " << pipelineStructure->mem_wb.rd_num << std::endl;
         }
 
-        // Forward to RT input if not using immediate
-        if (!aluSrc && pipelineStructure->mem_wb.rd_num == rt_num) {
+        // Forward to RT input if not using immediate and we need this register's value
+        if (!aluSrc && rt_num == pipelineStructure->mem_wb.rd_num && rt_num != 0) {
             aluInput2 = wb_data;
             std::cout << "  Forwarding from MEM/WB to RT input: 0x" << std::hex << wb_data << std::dec << std::endl;
         }
     }
 
-    // Then check EX/MEM forwarding
+    // Then check EX/MEM forwarding (higher priority)
     if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
         bool can_forward = true;
         uint32_t forward_data = pipelineStructure->ex_mem.alu_result;
@@ -828,15 +757,15 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
                 << " (value: " << forward_data << ")" << std::endl;
 
         if (can_forward) {
-            // Forward to RS input
-            if (pipelineStructure->ex_mem.rd_num == rs_num) {
+            // Forward to RS input if we need this register's value
+            if (rs_num == pipelineStructure->ex_mem.rd_num && rs_num != 0) {
                 aluInput1 = forward_data;
                 std::cout << "  Forwarding from EX/MEM to RS input: 0x" << std::hex << forward_data << std::dec
                         << " (overriding any MEM/WB forwarding)" << std::endl;
             }
 
-            // Forward to RT input if not using immediate
-            if (!aluSrc && pipelineStructure->ex_mem.rd_num == rt_num) {
+            // Forward to RT input if not using immediate and we need this register's value
+            if (!aluSrc && rt_num == pipelineStructure->ex_mem.rd_num && rt_num != 0) {
                 aluInput2 = forward_data;
                 std::cout << "  Forwarding from EX/MEM to RT input: 0x" << std::hex << forward_data << std::dec
                         << " (overriding any MEM/WB forwarding)" << std::endl;
@@ -867,6 +796,7 @@ void CPUSimulator::startCPU() {
     pipelineStructure->WB_Done = false;
 
     while (cpuRunning) {
+        std::cout <<  "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART" << std::endl;
         // Execute pipeline stages in reverse order to avoid overwriting data
         // Stages that depend on previous stages should go first
         writeBack(); // Stage 5 - doesn't depend on other stages in the current cycle
@@ -901,31 +831,30 @@ void CPUSimulator::startCPU() {
             cpuRunning = false;
         }
 
+        std::cout << "CYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEEND" << std::endl;
+
     }
 }
 
 void CPUSimulator::virtualClock() {
     //https://stackoverflow.com/questions/158585/how-do-you-add-a-timed-delay-to-a-c-program
-    using namespace std::this_thread; // sleep_for, sleep_until
-    using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
-    using std::chrono::system_clock;
-
-    // Optional: Only use sleep in non-debug mode to speed up debugging
-    if constexpr (DEBUG) {
-        sleep_for(10ns);
-        sleep_until(system_clock::now() + 1s);
-    }
-
-    //Clock Starts as a negative so a cycle will he low - high - low
+    // using namespace std::this_thread; // sleep_for, sleep_until
+    // using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+    // using std::chrono::system_clock;
+    clock = true;
     if (clock) {
-        // cyclesExecuted++;
+        if constexpr (DEBUG) {
+            std::cout << "Positive clock edge" << std::endl;
+        }
+
+
+        clock = false;
+        if (!clock) {
+            if constexpr (DEBUG) {
+                std::cout << "Negative clock edge" << std::endl;
+            }
+        }
     }
-    clock = !clock;
-    // clock = ~clock; This caused some issues with the toggling
-    // if (clock) {
-    //     nextStage = static_cast<PipelineStages>((currentStage + 1) % (5)); //Will wrap around to 0
-    //     currentStage = nextStage;
-    // }
 }
 
 void CPUSimulator::printPipelineState() const {
@@ -957,6 +886,69 @@ std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
     }
     return "unknown";
 }
+
+void CPUSimulator::setControlSignals(const Instruction& instr) const {
+    InstructionType type = instr.getType();
+    uint8_t opcode = instr.getOpcode();
+    uint8_t funct = instr.getFunct();
+
+    // Default values
+    pipelineStructure->id_ex.regWrite = false;
+    pipelineStructure->id_ex.memRead = false;
+    pipelineStructure->id_ex.memWrite = false;
+    pipelineStructure->id_ex.memToReg = false;
+    pipelineStructure->id_ex.branch = false;
+    pipelineStructure->id_ex.jump = false;
+    pipelineStructure->id_ex.aluOp = 0;
+    pipelineStructure->id_ex.aluSrc = false;
+    pipelineStructure->id_ex.regDst = 0;
+
+    if (type == InstructionType::R_Instruciton) {
+        // R-type instructions
+        pipelineStructure->id_ex.regWrite = true;
+        pipelineStructure->id_ex.regDst = 1; // Use rd field
+        pipelineStructure->id_ex.aluSrc = false; // Use rt value
+        pipelineStructure->id_ex.aluOp = funct; // Function code determines ALU operation
+
+        // Special case for jr
+        if (funct == InstructionSet::JR) {
+            pipelineStructure->id_ex.jump = true;
+            pipelineStructure->id_ex.regWrite = false;
+        }
+    } else if (type == InstructionType::I_Instruction) {
+        // I-type instructions
+        pipelineStructure->id_ex.aluSrc = true; // Use immediate value
+
+        if (opcode == InstructionSet::LW) {
+            // Load word
+            pipelineStructure->id_ex.regWrite = true;
+            pipelineStructure->id_ex.memRead = true;
+            pipelineStructure->id_ex.memToReg = true;
+            pipelineStructure->id_ex.regDst = 0; // Use rt field
+        } else if (opcode == InstructionSet::SW) {
+            // Store word
+            pipelineStructure->id_ex.memWrite = true;
+        } else if (opcode == InstructionSet::BEQ || opcode == InstructionSet::BNE) {
+            // Branch
+            pipelineStructure->id_ex.branch = true;
+        } else {
+            // Other I-type (addi, etc.)
+            pipelineStructure->id_ex.regWrite = true;
+            pipelineStructure->id_ex.regDst = 0; // Use rt field
+        }
+    } else if (type == InstructionType::J_Instruction) {
+        // J-type instructions
+        pipelineStructure->id_ex.jump = true;
+
+        if (opcode == InstructionSet::JAL) {
+            // Jump and link
+            pipelineStructure->id_ex.regWrite = true;
+            // Special case: write to $ra (register 31)
+            pipelineStructure->id_ex.rd_num = 31;
+        }
+    }
+}
+
 
 //Will manage cleaning pointers automativally hopefully
 //(according to the new cpp standards i think)

@@ -54,6 +54,8 @@ public:
     void printPipelineState() const;
     static std::string getRegisterName(uint8_t regNum);
 
+    void setControlSignals(const Instruction &instr) const;
+
 private:
     //CPU Clock
     bool clock = false;
