@@ -79,6 +79,7 @@ public:
         uint32_t rd_num{};
         uint32_t alu_result{};
         uint32_t memory_read_data{};
+        uint32_t write_data;
         uint32_t rs_value{};
         uint32_t rt_value{};
         bool regWrite{};

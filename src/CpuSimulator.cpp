@@ -629,15 +629,16 @@ void CPUSimulator::writeBack() const {
 
     std::cout << "=-===========-=======================" << std::endl;
     std::cout << "============-CPU WriteBack===========" << std::endl;
-
-    // Debug MEM/WB register values
-    std::cout << "MEM/WB Stage Register Values:" << std::endl;
-    std::cout << "  RegWrite: " << pipelineStructure->mem_wb.regWrite << std::endl;
-    std::cout << "  RD NUM: " << pipelineStructure->mem_wb.rd_num << " (register: " << getRegisterName(
-        pipelineStructure->mem_wb.rd_num) << ")" << std::endl;
-    std::cout << "  MemToReg: " << pipelineStructure->mem_wb.memToReg << std::endl;
-    std::cout << "  ALU Result: " << pipelineStructure->mem_wb.alu_result << std::endl;
-    std::cout << "  Memory Data: " << pipelineStructure->mem_wb.memory_read_data << std::endl;
+    if constexpr (DEBUG) {
+        // Debug MEM/WB register values
+        std::cout << "MEM/WB Stage Register Values:" << std::endl;
+        std::cout << "  RegWrite: " << pipelineStructure->mem_wb.regWrite << std::endl;
+        std::cout << "  RD NUM: " << pipelineStructure->mem_wb.rd_num << " (register: " << getRegisterName(
+            pipelineStructure->mem_wb.rd_num) << ")" << std::endl;
+        std::cout << "  MemToReg: " << pipelineStructure->mem_wb.memToReg << std::endl;
+        std::cout << "  ALU Result: " << pipelineStructure->mem_wb.alu_result << std::endl;
+        std::cout << "  Memory Data: " << pipelineStructure->mem_wb.memory_read_data << std::endl;
+    }
 
 
     // Only write back if regWrite is true
