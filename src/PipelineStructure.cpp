@@ -10,7 +10,8 @@ PipelineStructure::PipelineStructure() {
 PipelineStructure::~PipelineStructure() {
 }
 
-PipelineStructure::IF_ID_Register& PipelineStructure::IF_ID_Register::operator=(const PipelineStructure::IF_ID_Register &other) {
+PipelineStructure::IF_ID_Register &PipelineStructure::IF_ID_Register::operator=(
+    const PipelineStructure::IF_ID_Register &other) {
     if (this != &other) {
         pc = other.pc;
         instruction = other.instruction;
@@ -19,7 +20,8 @@ PipelineStructure::IF_ID_Register& PipelineStructure::IF_ID_Register::operator=(
     return *this;
 }
 
-PipelineStructure::ID_EX_Register& PipelineStructure::ID_EX_Register::operator=(const PipelineStructure::ID_EX_Register &other) {
+PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
+    const PipelineStructure::ID_EX_Register &other) {
     if (this != &other) {
         pc = other.pc;
         instruction = other.instruction;
@@ -46,7 +48,8 @@ PipelineStructure::ID_EX_Register& PipelineStructure::ID_EX_Register::operator=(
     return *this;
 }
 
-PipelineStructure::ID_EX_Register& PipelineStructure::ID_EX_Register::operator=(const PipelineStructure::IF_ID_Register &other) {
+PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
+    const PipelineStructure::IF_ID_Register &other) {
     pc = other.pc;
     instruction = other.instruction;
     valid = other.valid;
@@ -54,7 +57,8 @@ PipelineStructure::ID_EX_Register& PipelineStructure::ID_EX_Register::operator=(
 }
 
 
-PipelineStructure::EX_MEM_Register& PipelineStructure::EX_MEM_Register::operator=(const PipelineStructure::EX_MEM_Register &other) {
+PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator=(
+    const PipelineStructure::EX_MEM_Register &other) {
     if (this != &other) {
         pc = other.pc;
         instruction = other.instruction;
@@ -78,7 +82,8 @@ PipelineStructure::EX_MEM_Register& PipelineStructure::EX_MEM_Register::operator
     return *this;
 }
 
-PipelineStructure::EX_MEM_Register& PipelineStructure::EX_MEM_Register::operator=(const PipelineStructure::ID_EX_Register &other) {
+PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator=(
+    const PipelineStructure::ID_EX_Register &other) {
     pc = other.pc;
     instruction = other.instruction;
     rs_num = other.rs_num;
@@ -99,7 +104,8 @@ PipelineStructure::EX_MEM_Register& PipelineStructure::EX_MEM_Register::operator
     return *this;
 }
 
-PipelineStructure::MEM_WB_Register& PipelineStructure::MEM_WB_Register::operator=(const PipelineStructure::MEM_WB_Register &other) {
+PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator=(
+    const PipelineStructure::MEM_WB_Register &other) {
     if (this != &other) {
         pc = other.pc;
         instruction = other.instruction;
@@ -117,7 +123,8 @@ PipelineStructure::MEM_WB_Register& PipelineStructure::MEM_WB_Register::operator
     return *this;
 }
 
-PipelineStructure::MEM_WB_Register& PipelineStructure::MEM_WB_Register::operator=(const PipelineStructure::EX_MEM_Register &other) {
+PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator=(
+    const PipelineStructure::EX_MEM_Register &other) {
     pc = other.pc;
     instruction = other.instruction;
     rs_num = other.rs_num;

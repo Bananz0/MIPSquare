@@ -345,10 +345,10 @@ void CPUSimulator::execute() {
     }
 
     uint32_t destReg = alu->getDestinationRegister(
-     pipelineStructure->id_ex.regDst,
-     pipelineStructure->id_ex.rt_num,
-     pipelineStructure->id_ex.rd_num
-     );
+        pipelineStructure->id_ex.regDst,
+        pipelineStructure->id_ex.rt_num,
+        pipelineStructure->id_ex.rd_num
+    );
 
 
     // Debug ID/EX register values
@@ -716,8 +716,8 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
     // Forward from MEM/WB stage first
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
         uint32_t wb_data = pipelineStructure->mem_wb.memToReg
-                             ? pipelineStructure->mem_wb.memory_read_data
-                             : pipelineStructure->mem_wb.alu_result;
+                               ? pipelineStructure->mem_wb.memory_read_data
+                               : pipelineStructure->mem_wb.alu_result;
 
         std::cout << "  MEM/WB Instruction: " << pipelineStructure->mem_wb.instruction.toString() << std::endl;
         std::cout << "  MEM/WB: Valid=1, RegWrite=1, Target Register="
@@ -796,7 +796,9 @@ void CPUSimulator::startCPU() {
     pipelineStructure->WB_Done = false;
 
     while (cpuRunning) {
-        std::cout <<  "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART" << std::endl;
+        std::cout <<
+                "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART"
+                << std::endl;
         // Execute pipeline stages in reverse order to avoid overwriting data
         // Stages that depend on previous stages should go first
         writeBack(); // Stage 5 - doesn't depend on other stages in the current cycle
@@ -831,7 +833,8 @@ void CPUSimulator::startCPU() {
             cpuRunning = false;
         }
 
-        std::cout << "CYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEEND" << std::endl;
+        std::cout <<
+                "CYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEEND" << std::endl;
 
     }
 }
@@ -887,7 +890,7 @@ std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
     return "unknown";
 }
 
-void CPUSimulator::setControlSignals(const Instruction& instr) const {
+void CPUSimulator::setControlSignals(const Instruction &instr) const {
     InstructionType type = instr.getType();
     uint8_t opcode = instr.getOpcode();
     uint8_t funct = instr.getFunct();
