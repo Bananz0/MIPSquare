@@ -53,6 +53,11 @@ PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
     pc = other.pc;
     instruction = other.instruction;
     valid = other.valid;
+    rs_num = instruction.getRs();
+    rt_num = instruction.getRt();
+    rd_num = instruction.getRd();
+    immediate = instruction.getImmediate();
+    shamt = instruction.getShamt();
     return *this;
 }
 

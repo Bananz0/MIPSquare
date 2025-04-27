@@ -6,6 +6,11 @@
 #define CONFIGUREATION_H
 
 #define DEBUG 1
+#define FETCH_DEBUG 1
+#define DECODE_DEBUG 1
+#define EXECUTE_DEBUG 1
+#define MEMORY_DEBUG 1
+#define WRITEBACK_DEBUG 1
 #define REGFILE_DEBUG 1
 #define REGISTER_DEBUG 0
 #define INST_DEBUG 0
