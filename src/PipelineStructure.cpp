@@ -4,11 +4,9 @@
 
 #include "PipelineStructure.h"
 
-PipelineStructure::PipelineStructure() {
-}
+PipelineStructure::PipelineStructure() = default;
 
-PipelineStructure::~PipelineStructure() {
-}
+PipelineStructure::~PipelineStructure() = default;
 
 PipelineStructure::IF_ID_Register &PipelineStructure::IF_ID_Register::operator=(
     const PipelineStructure::IF_ID_Register &other) {
