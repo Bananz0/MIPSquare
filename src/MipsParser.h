@@ -5,14 +5,14 @@
 #ifndef MIPSPARSER_H
 #define MIPSPARSER_H
 
-
-
 #include <vector>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <map>
 #include "Instruction.h"
+#include <Configureation.h>
 
 class MipsParser {
 private:
@@ -58,33 +58,31 @@ private:
         {"jal", {InstructionType::J_Instruction, InstructionSet::JAL, 0}}
     };
 
-    static const int MAX_LABELS = 100;
+    // Store labels and their corresponding instruction indices
+    std::map<std::string, int> labelMap;
 
-    struct Label {
-        std::string name;
-        int address;
-    };
-
-    Label labels[MAX_LABELS];
-    int labelCount = 0;
-
+    // Store raw instructions for second pass
     std::vector<std::string> rawInstructions;
 
 public:
-    MipsParser() : labelCount(0) {
-    }
+    MipsParser() {}
 
     // Get register number from name (e.g., "t1" -> 9)
     int getRegisterNumber(const std::string &regName) {
         // Handle special case with $ prefix
         std::string name = regName;
-        if (name[0] == '$') {
+        if (!name.empty() && name[0] == '$') {
             name = name.substr(1);
         }
 
         // Check for direct numbers like $1, $2, etc.
-        if (isdigit(name[0])) {
+        if (!name.empty() && isdigit(name[0])) {
             return std::stoi(name);
+        }
+
+        // Handle "zero" special case
+        if (name == "zero") {
+            return 0;
         }
 
         // Look up in register names
@@ -109,50 +107,30 @@ public:
         return {InstructionType::Uninitialized, 0, 0};
     }
 
-    // Parse and add a label
-    void addLabel(const std::string &name, int address) {
-        if (labelCount < MAX_LABELS) {
-            // Remove trailing colon if present
-            std::string labelName = name;
-            if (labelName.back() == ':') {
-                labelName.pop_back();
-            }
-            labels[labelCount].name = labelName;
-            labels[labelCount].address = address;
-            labelCount++;
-        } else {
-            std::cerr << "Too many labels, max is " << MAX_LABELS << std::endl;
-        }
-    }
-
-    // Find label address
-    int findLabelAddress(const std::string &name) {
-        for (int i = 0; i < labelCount; i++) {
-            if (labels[i].name == name) {
-                return labels[i].address;
-            }
-        }
-        return -1; // Label not found
-    }
-
-// Assemble a single instruction to binary
-    uint32_t assembleInstruction(const std::string &instruction) {
+    // Process an instruction and return its machine code
+    uint32_t assembleInstruction(const std::string &instruction, int currentInstrIndex) {
         std::istringstream iss(instruction);
         std::string opName;
         iss >> opName;
 
-        // Check if this is a label (ends with :)
-        if (opName.back() == ':') {
-            // Get the next token which should be the actual instruction
-            iss >> opName;
+        if constexpr (PARSER_DEBUG) {
+            std::cout << "Assembling instruction: " << instruction << ", index: " << currentInstrIndex << std::endl;
         }
 
-        InstructionFormat format = getInstructionFormat(opName);
+        // Special case for NOP
+        if (opName == "nop") {
+            return 0x00000000;
+        }
 
+        if (opName == "halt") {
+            return 0xFFFFFFFF;
+        }
+
+
+        InstructionFormat format = getInstructionFormat(opName);
         uint32_t machineCode = 0;
 
         if (format.type == InstructionType::R_Instruciton) {
-            // R-type instructions
             if (opName == "sll" || opName == "srl" || opName == "sra") {
                 // Shift format: op rd, rt, shamt
                 std::string rdStr, rtStr;
@@ -180,29 +158,21 @@ public:
                 machineCode = (format.opcode << 26) | (rs << 21) |
                               (0 << 16) | (0 << 11) | (0 << 6) | format.funct;
             } else {
-                // Your custom R-type format is: add rs rt rd
-                // Where:
-                // - First register is rs (source 1)
-                // - Second register is rt (source 2)
-                // - Third register is rd (destination)
-                std::string rsStr, rtStr, rdStr;
+                // R-type format: add rs, rt, rd
+                std::string reg1Str, reg2Str, reg3Str;
 
-                // Read the three registers in your custom order
-                iss >> rsStr; // First register (rs)
-                if (rsStr.back() == ',') rsStr.pop_back();
+                iss >> reg1Str;
+                if (reg1Str.back() == ',') reg1Str.pop_back();
 
-                iss >> rtStr; // Second register (rt)
-                if (rtStr.back() == ',') rtStr.pop_back();
+                iss >> reg2Str;
+                if (reg2Str.back() == ',') reg2Str.pop_back();
 
-                iss >> rdStr; // Third register (rd)
+                iss >> reg3Str;
 
-                // Get register numbers
-                int rs = getRegisterNumber(rsStr);
-                int rt = getRegisterNumber(rtStr);
-                int rd = getRegisterNumber(rdStr);
+                int rs = getRegisterNumber(reg1Str);
+                int rt = getRegisterNumber(reg2Str);
+                int rd = getRegisterNumber(reg3Str);
 
-                // Create the machine code with the correct field positions
-                // Format for R-type: opcode(6) | rs(5) | rt(5) | rd(5) | shamt(5) | funct(6)
                 machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) |
                               (rd << 11) | (0 << 6) | format.funct;
             }
@@ -229,157 +199,182 @@ public:
                     machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immediate & 0xFFFF);
                 }
             } else if (opName == "beq" || opName == "bne") {
-                // Branch format: op rs, rt, label
-                std::string rsStr, rtStr, labelStr;
+                // Branch format: op rs, rt, label/offset
+                std::string rsStr, rtStr, labelOrOffset;
                 iss >> rsStr;
                 if (rsStr.back() == ',') rsStr.pop_back();
 
                 iss >> rtStr;
                 if (rtStr.back() == ',') rtStr.pop_back();
 
-                iss >> labelStr;
+                iss >> labelOrOffset;
 
                 int rs = getRegisterNumber(rsStr);
                 int rt = getRegisterNumber(rtStr);
-
-                // Find label address (for second pass)
-                int labelAddr = findLabelAddress(labelStr);
-                int immediate = 0;
-
-                if (labelAddr != -1) {
-                    // Calculate offset (address difference - 1 for branch delay slot)
-                    // We need to account for the current instruction position
-                    int currentAddr = rawInstructions.size() - 1;
-                    immediate = labelAddr - currentAddr - 1;
-                }
-
-                machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immediate & 0xFFFF);
-            } else {
-                // Your custom I-type format is: addi rt rs imm
-                // Where:
-                // - First register is rt (destination)
-                // - Second register is rs (source)
-                // - Third value is immediate
-                std::string rtStr, rsStr;
                 int immediate;
 
-                iss >> rtStr; // First argument (rt)
+                // Check if it's a direct offset or a label
+                if (isdigit(labelOrOffset[0]) ||
+                    (labelOrOffset[0] == '-' && labelOrOffset.size() > 1 && isdigit(labelOrOffset[1]))) {
+                    // Direct offset
+                    immediate = std::stoi(labelOrOffset);
+                } else {
+                    // It's a label, look up its address
+                    auto it = labelMap.find(labelOrOffset);
+                    if (it != labelMap.end()) {
+                        // Calculate branch offset (target - (current+1))
+                        immediate = it->second - (currentInstrIndex + 1);
+                    } else {
+                        std::cerr << "Undefined label: " << labelOrOffset << std::endl;
+                        immediate = 0;
+                    }
+                }
+
+                machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immediate & 0xFFFF);
+            } else {
+                // Generic I-type: addi rt, rs, immediate
+                std::string rtStr, rsStr;
+                int immVal;
+
+                iss >> rtStr;
                 if (rtStr.back() == ',') rtStr.pop_back();
 
-                iss >> rsStr; // Second argument (rs)
+                iss >> rsStr;
                 if (rsStr.back() == ',') rsStr.pop_back();
 
-                iss >> immediate; // Third argument (immediate value)
+                iss >> immVal;
 
                 int rt = getRegisterNumber(rtStr);
                 int rs = getRegisterNumber(rsStr);
 
-                // Create the machine code with the correct field positions
-                // Format for I-type: opcode(6) | rs(5) | rt(5) | immediate(16)
-                machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immediate & 0xFFFF);
+                machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immVal & 0xFFFF);
+            }} else if (format.type == InstructionType::J_Instruction) {
+                // J-type: op target
+                std::string targetStr;
+                iss >> targetStr;
+
+                uint32_t target = 0;
+
+                // Check if it's a numerical address or a label
+                if (isdigit(targetStr[0]) ||
+                    (targetStr[0] == '0' && targetStr.size() > 1 && (targetStr[1] == 'x' || targetStr[1] == 'X'))) {
+                    // Direct address
+                    if (targetStr.substr(0, 2) == "0x") {
+                        target = std::stoul(targetStr, nullptr, 16);
+                    } else {
+                        target = std::stoul(targetStr);
+                    }
+                    } else {
+                        // It's a label, look up its address
+                        auto it = labelMap.find(targetStr);
+                        if (it != labelMap.end()) {
+                            target = it->second;
+                        } else {
+                            std::cerr << "Undefined label: " << targetStr << std::endl;
+                            target = 0;
+                        }
+                    }
+
+                // Debug output
+                std::cout << "J-Type Instruction: " << opName << " " << targetStr << std::endl;
+                std::cout << "Target string: " << targetStr << std::endl;
+                std::cout << "Label found, target index = " << target << std::endl;
+
+                // For J instructions, 26-bit target field is the word address
+                uint32_t opcodePart = (format.opcode << 26);
+                uint32_t targetPart = (target & 0x3FFFFFF);
+
+                std::cout << "Opcode: 0x" << std::hex << opcodePart << std::endl;
+                std::cout << "Final target (address): 0x" << std::hex << targetPart << std::endl;
+
+                machineCode = opcodePart | targetPart;
+
+                std::cout << "Final machine code: 0x" << std::hex << machineCode << std::endl;
             }
-        } else if (format.type == InstructionType::J_Instruction) {
-            // J-type: op target
-            std::string targetStr;
-            iss >> targetStr;
 
-            uint32_t target = 0;
-
-            // Check if it's a label or direct address
-            if (isdigit(targetStr[0]) || targetStr[0] == '0' && (targetStr[1] == 'x' || targetStr[1] == 'X')) {
-                // Direct address
-                if (targetStr.substr(0, 2) == "0x") {
-                    target = std::stoul(targetStr, nullptr, 16);
-                } else {
-                    target = std::stoul(targetStr);
-                }
-            } else {
-                // Label - look up in label table
-            int labelAddr = findLabelAddress(targetStr);
-            if (labelAddr != -1) {
-                target = labelAddr;
-            }
-        }
-
-        // The target is only 26 bits and gets shifted left by 2
-        target = target >> 2;
-        machineCode = (format.opcode << 26) | (target & 0x3FFFFFF);
+        return machineCode;
     }
 
-    return machineCode;
-}
-
-    // Load and assemble program from file
+    // Load a MIPS program from a file and return machine code
     std::vector<uint32_t> loadProgramFromFile(const std::string &filename) {
-        std::vector<uint32_t> MIPSProgram;
+        std::vector<uint32_t> machineCode;
         rawInstructions.clear();
-        labelCount = 0;
+        labelMap.clear();
 
-        // Open the file
         std::ifstream programFile(filename);
         if (!programFile.is_open()) {
             std::cerr << "Error: Could not open " << filename << std::endl;
             return {};
         }
 
-        // First pass: collect all instructions and identify labels
+        // First pass: collect labels and their instruction indices
         std::string line;
+        int instrIndex = 0;
         while (std::getline(programFile, line)) {
-            // Remove comments
+            // Trim comments and whitespace
             size_t commentPos = line.find("//");
             if (commentPos != std::string::npos) {
                 line = line.substr(0, commentPos);
             }
-
-            // Trim whitespace
             line.erase(0, line.find_first_not_of(" \t"));
+            if (line.empty()) continue;
+            if (line.back() == '\r') line.pop_back();
             line.erase(line.find_last_not_of(" \t") + 1);
 
-            // Skip empty lines
-            if (line.empty()) {
-                continue;
-            }
+            if (line.empty()) continue;
 
-            // Check if this is a label declaration
-            if (line.find(':') != std::string::npos) {
-                std::istringstream iss(line);
-                std::string label;
-                std::getline(iss, label, ':');
+            size_t colonPos = line.find(':');
+            if (colonPos != std::string::npos) {
+                std::string labelName = line.substr(0, colonPos);
+                labelName.erase(0, labelName.find_first_not_of(" \t"));
+                labelName.erase(labelName.find_last_not_of(" \t") + 1);
 
-                // Add label with current instruction index
-                addLabel(label, rawInstructions.size());
+                // Map label to current instruction index
+                labelMap[labelName] = instrIndex;
 
-                // Check if there's an instruction on the same line after the label
-                std::string restOfLine;
-                std::getline(iss, restOfLine);
-                restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
-
-                if (!restOfLine.empty()) {
-                    // Add remaining instruction
-                    rawInstructions.push_back(restOfLine);
+                // Check for instruction after the label
+                std::string remaining = line.substr(colonPos + 1);
+                remaining.erase(0, remaining.find_first_not_of(" \t"));
+                if (!remaining.empty()) {
+                    rawInstructions.push_back(remaining);
+                    instrIndex++;
                 }
             } else if (line.substr(0, 2) == "0x") {
-                // This is already a hex instruction, add it directly
-                uint32_t hexValue = std::stoul(line, nullptr, 16);
-                MIPSProgram.push_back(hexValue);
-            } else {
-                // Regular instruction
                 rawInstructions.push_back(line);
+                instrIndex++;
+            } else {
+                rawInstructions.push_back(line);
+                instrIndex++;
             }
         }
 
-        // Second pass: assemble instructions now that we have all labels
-        for (const std::string &instr: rawInstructions) {
-            uint32_t machineCode = assembleInstruction(instr);
-            MIPSProgram.push_back(machineCode);
+        if constexpr (PARSER_DEBUG) {
+            std::cout << "First Pass Results:" << std::endl;
+            std::cout << "Raw Instructions:" << std::endl;
+            for (size_t i = 0; i < rawInstructions.size(); ++i) {
+                std::cout << i << ": " << rawInstructions[i] << std::endl;
+            }
+            std::cout << "Label Map:" << std::endl;
+            for (const auto &pair : labelMap) {
+                std::cout << pair.first << ": " << pair.second << std::endl;
+            }
         }
 
-        // Close the file
-        programFile.close();
+        // Second pass: resolve labels and assemble instructions
+        programFile.clear();
+        programFile.seekg(0);
+        machineCode.reserve(rawInstructions.size());
+        for (int i = 0; i < rawInstructions.size(); ++i) {
+            std::string &instr = rawInstructions[i];
+            if (instr.substr(0, 2) == "0x") {
+                machineCode.push_back(std::stoul(instr, nullptr, 16));
+            } else {
+                machineCode.push_back(assembleInstruction(instr, i));
+            }
+        }
 
-        return MIPSProgram;
+        return machineCode;
     }
 };
-
 
 #endif //MIPSPARSER_H

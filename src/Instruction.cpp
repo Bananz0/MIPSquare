@@ -7,6 +7,7 @@
 Instruction::Instruction() = default;
 
 Instruction::Instruction(const uint32_t rawInstruction) {
+    rawInstructionStore = rawInstruction;
     parseRawInstruction(rawInstruction);
 }
 
@@ -78,6 +79,12 @@ bool Instruction::isJType() const {
 std::string Instruction::toString() const {
     std::stringstream ss;
     ss << "Instruction: ";
+    if (type == InstructionType::R_Instruciton && opcode == 0 && funct == InstructionSet::NOP
+    && rs == RegisterNumber::zero && rt == RegisterNumber::zero
+    && rd == RegisterNumber::zero && shamt == 0) {
+        ss << "NOP (No Operation)";
+        return ss.str();
+    }
     switch (type) {
         case InstructionType::R_Instruciton:
             ss << "R-type, Opcode: 0x" << std::hex << static_cast<int>(opcode)
@@ -111,6 +118,9 @@ std::string Instruction::toString() const {
     return ss.str();
 }
 
+uint32_t Instruction::getRawInstruction() const {
+    return rawInstructionStore;
+}
 
 //This should get the instruction from the ID as a variable and decode it to the registerfile
 void Instruction::parseRawInstruction(const uint32_t raw) {
@@ -138,6 +148,13 @@ void Instruction::parseRawInstruction(const uint32_t raw) {
 
     rs = rt = rd = RegisterNumber::zero; //Set all to zero
     shamt = funct = immediate = jumpTarget = 0;
+
+    // Check for NOP instruction (all zeros)
+    if (raw == 0) {
+        type = InstructionType::R_Instruciton;
+        funct = InstructionSet::NOP;
+        return;
+    }
 
     //Determine type and extract relevant fields
     if (opcode == 0) {

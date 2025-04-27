@@ -1,7 +1,31 @@
-addi t1 0 5
-addi t2 0 6
-add t1 t2 s2
-add t1 s2 s3
+addi t0 zero 1000
+addi t1 0 50
+addi t2 0 23
+addi t3 0 31
+j end
+loop:
+    beq t3 t1 done
+    addi t3 0 69
+    j loop
+done:
+    sw t2 0(t0)
+    addi t3 0 69
+    nop
+end:
+    halt
+
+
+
+
+
+
+
+
+//addi t1 0 5
+//addi t2 0 6
+//nop
+//add t1 t2 s2
+//add t1 s2 s3
 
 //0x20090005
 //0x200A0006

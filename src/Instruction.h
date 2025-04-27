@@ -24,6 +24,8 @@ namespace InstructionSet {
     constexpr uint8_t SRL = 0x02; //000010
     constexpr uint8_t SRA = 0x03; //000011
     constexpr uint8_t JR = 0x08; //001000
+    constexpr uint8_t NOP = 0x00; //000000
+
 
     //I Type Instructions Definitions
     constexpr uint8_t ADDI = 0x08; //001000
@@ -60,6 +62,7 @@ public:
     [[nodiscard]] uint8_t getRd() const;
     [[nodiscard]] uint8_t getShamt() const;
     [[nodiscard]] std::string toString() const;
+    [[nodiscard]] uint32_t getRawInstruction() const;
 
     void parseRawInstruction(uint32_t raw);
     bool isRType() const;
@@ -70,6 +73,7 @@ public:
 
 private:
     InstructionType type = InstructionType::Uninitialized;
+    uint32_t rawInstructionStore = 0;
     uint8_t opcode = 0;
     RegisterNumber rs = RegisterNumber::a0;
     RegisterNumber rt = RegisterNumber::a0;

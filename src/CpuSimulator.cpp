@@ -194,6 +194,23 @@ void CPUSimulator::decode() const {
         return;
     }
 
+    // Check for HALT instruction
+    if (pipelineStructure->if_id.valid && pipelineStructure->if_id.instruction.getRawInstruction() == 0xFFFFFFFF) {
+        std::cout << "\n==================================" << std::endl;
+        std::cout << "HALT instruction detected. Terminating program." << std::endl;
+        std::cout << "==================================" << std::endl;
+
+        // Make this instruction invalid so it doesn't propagate
+        pipelineStructure->if_id.valid = false;
+        pipelineStructure->id_ex.valid = false;
+
+        // Set cpuRunning to false (need to make decode() non-const or use a different approach)
+        const_cast<CPUSimulator*>(this)->cpuRunning = false;
+
+        pipelineStructure->ID_Done = true;
+        return;
+    }
+
     std::cout << "==========   =====================" << std::endl;
     std::cout << "===========    DECODE  ===========" << std::endl;
 
@@ -324,6 +341,26 @@ void CPUSimulator::decode() const {
 
     if constexpr (DEBUG) {
         std::cout << "Decode complete - instruction moving to ID/EX stage" << std::endl;
+
+        if (jump) {
+            std::cout << "Jump instruction detected in decode: "
+                      << instr.toString() << std::endl;
+            std::cout << "Jump target: 0x" << std::hex
+                      << instr.getJumpTarget() << std::dec << std::endl;
+
+            // Set PC directly for jumps (this is the typical MIPS jump handling)
+            uint32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
+            std::cout << "Jumping to address: 0x" << std::hex << jumpAddr << std::dec << std::endl;
+
+            // Set the PC and flush the pipeline
+            programCounter->setPC(jumpAddr);
+            pipelineStructure->if_id.valid = false; // Invalidate fetched instruction
+
+            // Indicate jump was taken
+            std::cout << "Jump taken. PC set to: 0x" << std::hex
+                      << programCounter->getPC() << std::dec << std::endl;
+        }
+
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
@@ -337,6 +374,23 @@ void CPUSimulator::execute() {
     }
     std::cout << "============================ == =" << std::endl;
     std::cout << "===========CPU EXECUTE===========" << std::endl;
+
+    Instruction &instr = pipelineStructure->id_ex.instruction;
+
+    if (instr.getOpcode() == 0 && instr.getFunct() == InstructionSet::NOP) {
+        // Just pass the NOP through the pipeline
+        pipelineStructure->ex_mem = pipelineStructure->id_ex;
+        pipelineStructure->ex_mem.valid = true;
+        pipelineStructure->EX_Done = true;
+
+        if constexpr (DEBUG) {
+            std::cout << "\nExecuting: NOP instruction" << std::endl;
+        }
+
+        std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
+        return;
+    }
+
 
     if (pipelineStructure->stallPipeline && !pipelineStructure->id_ex.memRead) {
         if constexpr (DEBUG) {
@@ -446,17 +500,46 @@ void CPUSimulator::execute() {
         if (pipelineStructure->id_ex.aluOp == 0xF) {
             // JR
             jumpTarget = aluInput1; // Jump to address in register
+            if constexpr (DEBUG) {
+                std::cout << "Executing JR instruction." << std::endl;
+                std::cout << "  Jump register (RS): " << getRegisterName(pipelineStructure->id_ex.rs_num)
+                          << ", Value: 0x" << std::hex << aluInput1 << std::dec << std::endl;
+                std::cout << "  Calculated Jump Target: 0x" << std::hex << jumpTarget << std::dec << std::endl;
+            }
         } else if (pipelineStructure->id_ex.aluOp == 0x12 || // J
-                   pipelineStructure->id_ex.aluOp == 0x13) {
-            // JAL
+                   pipelineStructure->id_ex.aluOp == 0x13) {  // JAL
+
+            if (pipelineStructure->id_ex.aluOp == 0x12){
+                if constexpr (DEBUG) {
+                    std::cout << "Executing J instruction." << std::endl;
+                }
+            }
+            else if (pipelineStructure->id_ex.aluOp == 0x13){
+                 if constexpr (DEBUG) {
+                    std::cout << "Executing JAL instruction." << std::endl;
+                }
+            }
             // Jump target from J-type format: PC[31:28] | (immediate << 2)
             uint32_t pcHigh4 = pipelineStructure->id_ex.pc & 0xF0000000;
             uint32_t targetOffset = pipelineStructure->id_ex.instruction.getJumpTarget() << 2;
             jumpTarget = pcHigh4 | targetOffset;
+
+            if constexpr (DEBUG) {
+                std::cout << "  PC[31:28]: 0x" << std::hex << pcHigh4 << std::dec << std::endl;
+                std::cout << "  Target Offset (Immediate << 2): 0x" << std::hex << targetOffset << std::dec << std::endl;
+                std::cout << "  Calculated Jump Target: 0x" << std::hex << jumpTarget << std::dec << std::endl;
+            }
         } else {
             jumpTarget = pipelineStructure->id_ex.pc + 4; // Default fallback
+            if constexpr (DEBUG) {
+                std::cout << "Warning: Unknown jump type, falling back to PC + 4" << std::endl;
+            }
         }
 
+        if constexpr (DEBUG) {
+            std::cout << "Final jump target for opcode 0x" << std::hex << (int)pipelineStructure->id_ex.instruction.getOpcode()
+                      << ": 0x" << std::hex << jumpTarget << std::dec << std::endl;
+        }
         handleBranchHazard(true, jumpTarget); // Use branch hazard handler for jumps too
     }
 
@@ -721,21 +804,28 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
                                : pipelineStructure->mem_wb.alu_result;
 
         std::cout << "  MEM/WB Instruction: " << pipelineStructure->mem_wb.instruction.toString() << std::endl;
-        std::cout << "  MEM/WB: Valid=1, RegWrite=1, Target Register="
-                << getRegisterName(pipelineStructure->mem_wb.rd_num)
+        std::cout << "  MEM/WB: Valid " << pipelineStructure->mem_wb.valid << "RegWrite= "<< pipelineStructure->mem_wb.regWrite <<" Target Register="
+                << getRegisterName(pipelineStructure->mem_wb.write_reg_num)
                 << " (value: " << wb_data << ")" << std::endl;
 
+        // Determine correct destination register based on instruction type
+        uint32_t mem_wb_dest_reg = 0;
+        if (pipelineStructure->mem_wb.instruction.getType() == InstructionType::R_Instruciton) {
+            mem_wb_dest_reg = pipelineStructure->mem_wb.rd_num;
+        } else {
+            mem_wb_dest_reg = pipelineStructure->mem_wb.rt_num;
+        }
+
         // Forward to RS input if we need this register's value
-        if (rs_num == pipelineStructure->mem_wb.rd_num && rs_num != 0) {
+        if (rs_num == mem_wb_dest_reg && rs_num != 0) {
             aluInput1 = wb_data;
             std::cout << "  Forwarding from MEM/WB to RS input: 0x" << std::hex << wb_data << std::dec << std::endl;
         } else {
-            std::cout << "  No forwarding from MEM/WB to RS: "
-                    << rs_num << " != " << pipelineStructure->mem_wb.rd_num << std::endl;
+            std::cout << "  No forwarding from MEM/WB to RS: " << rs_num << " != " << mem_wb_dest_reg << std::endl;
         }
 
         // Forward to RT input if not using immediate and we need this register's value
-        if (!aluSrc && rt_num == pipelineStructure->mem_wb.rd_num && rt_num != 0) {
+        if (!aluSrc && rt_num == mem_wb_dest_reg && rt_num != 0) {
             aluInput2 = wb_data;
             std::cout << "  Forwarding from MEM/WB to RT input: 0x" << std::hex << wb_data << std::dec << std::endl;
         }
@@ -746,30 +836,37 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         bool can_forward = true;
         uint32_t forward_data = pipelineStructure->ex_mem.alu_result;
 
+        // Determine correct destination register based on instruction type
+        uint32_t ex_mem_dest_reg = 0;
+        if (pipelineStructure->ex_mem.instruction.getType() == InstructionType::R_Instruciton) {
+            ex_mem_dest_reg = pipelineStructure->ex_mem.rd_num;
+        } else {
+            ex_mem_dest_reg = pipelineStructure->ex_mem.rt_num;
+        }
+
         // Check for load instruction
         if (pipelineStructure->ex_mem.memToReg && pipelineStructure->ex_mem.memRead) {
+            // Load instruction - can't forward in this cycle
             can_forward = false;
-            std::cout << "  EX/MEM: Cannot forward from load instruction (memory read in progress)" << std::endl;
         }
 
         std::cout << "  EX/MEM Instruction: " << pipelineStructure->ex_mem.instruction.toString() << std::endl;
         std::cout << "  EX/MEM: Valid=1, RegWrite=1, CanForward=" << can_forward
-                << ", Target Register=" << getRegisterName(pipelineStructure->ex_mem.rd_num)
+                << ", Target Register=" << getRegisterName(ex_mem_dest_reg)
                 << " (value: " << forward_data << ")" << std::endl;
 
         if (can_forward) {
-            // Forward to RS input if we need this register's value
-            if (rs_num == pipelineStructure->ex_mem.rd_num && rs_num != 0) {
+            // Forward to RS input
+            if (rs_num == ex_mem_dest_reg && rs_num != 0) {
                 aluInput1 = forward_data;
-                std::cout << "  Forwarding from EX/MEM to RS input: 0x" << std::hex << forward_data << std::dec
-                        << " (overriding any MEM/WB forwarding)" << std::endl;
+                std::cout << "  Forwarding from EX/MEM to RS input: 0x" << std::hex << forward_data << std::dec << std::endl;
             }
 
-            // Forward to RT input if not using immediate and we need this register's value
-            if (!aluSrc && rt_num == pipelineStructure->ex_mem.rd_num && rt_num != 0) {
+            // Forward to RT input if not using immediate
+            if (!aluSrc && rt_num == ex_mem_dest_reg && rt_num != 0) {
                 aluInput2 = forward_data;
                 std::cout << "  Forwarding from EX/MEM to RT input: 0x" << std::hex << forward_data << std::dec
-                        << " (overriding any MEM/WB forwarding)" << std::endl;
+                         << " (overriding any MEM/WB forwarding)" << std::endl;
             }
         }
     }
@@ -797,6 +894,7 @@ void CPUSimulator::startCPU() {
     pipelineStructure->WB_Done = false;
 
     while (cpuRunning) {
+        cyclesExecuted++;
         std::cout <<
                 "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART"
                 << std::endl;
@@ -807,8 +905,6 @@ void CPUSimulator::startCPU() {
         execute();
         decode();
         fetch();
-
-        cyclesExecuted++;
         programCounter->updatePC();
         virtualClock();
 
@@ -850,6 +946,7 @@ void CPUSimulator::virtualClock() {
         if constexpr (DEBUG) {
             std::cout << "Positive clock edge" << std::endl;
         }
+
 
 
         clock = false;
