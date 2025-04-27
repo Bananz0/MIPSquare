@@ -89,6 +89,7 @@ public:
 
         PipelineStructure::MEM_WB_Register &operator=(const PipelineStructure::EX_MEM_Register &other);
     } mem_wb;
+
     IF_ID_Register next_if_id;
     ID_EX_Register next_id_ex;
     EX_MEM_Register next_ex_mem;
