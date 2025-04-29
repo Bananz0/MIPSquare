@@ -466,6 +466,7 @@ void CPUSimulator::execute() {
     uint32_t aluInput2;
 
     // For shift instructions, use shamt field
+    //I'm not actually using this but had it to test my capability and it not worky
     if (pipelineStructure->id_ex.instruction.getOpcode() == 0x0 &&
         (pipelineStructure->id_ex.instruction.getFunct() == 0x00 || // SLL
          pipelineStructure->id_ex.instruction.getFunct() == 0x02 || // SRL
