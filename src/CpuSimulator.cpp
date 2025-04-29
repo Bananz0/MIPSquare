@@ -522,21 +522,46 @@ void CPUSimulator::execute() {
 
     // Handle branch instructions
     if (pipelineStructure->id_ex.branch) {
-        // For BEQ, the branchTaken flag is based on aluResult == 0
-        if (pipelineStructure->id_ex.aluOp == 0x1) {
-            branchTaken = (aluResult == 0);
+        // Get ALU inputs with forwarding (make sure these are up to date from dataForwarder)
+        uint32_t rs_value = aluInput1;
+        uint32_t rt_value = aluInput2;
+
+        bool branchTaken = false;
+
+        // For BEQ, branch if rs == rt
+        if (pipelineStructure->id_ex.instruction.getOpcode() == 0x4) {
+            // BEQ
+            branchTaken = (rs_value == rt_value);
+        }
+        // For BNE, branch if rs != rt
+        else if (pipelineStructure->id_ex.instruction.getOpcode() == 0x5) {
+            // BNE
+            branchTaken = (rs_value != rt_value);
         }
 
         if (branchTaken) {
-            // Calculate branch target
+            // Calculate branch target: PC + 4 + (sign-extended immediate << 2)
             uint32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
                                     (pipelineStructure->id_ex.immediate << 2);
+
+            // Debug info
+            if constexpr (DEBUG) {
+                std::cout << "Branch condition met! Taking branch to 0x" << std::hex << branchTarget << std::dec <<
+                        std::endl;
+                std::cout << "RS value: " << rs_value << ", RT value: " << rt_value << std::endl;
+            }
+
             handleBranchHazard(true, branchTarget);
+        } else {
+            if constexpr (DEBUG) {
+                std::cout << "Branch condition not met. Continuing sequential execution." << std::endl;
+                std::cout << "RS value: " << rs_value << ", RT value: " << rt_value << std::endl;
+            }
         }
     }
 
     // Handle jump instructions
-    if (pipelineStructure->id_ex.jump) {
+    if (pipelineStructure->id_ex.jump && !pipelineStructure->jumpTaken) {
         uint32_t jumpTarget;
 
         if (pipelineStructure->id_ex.aluOp == 0xF) {
