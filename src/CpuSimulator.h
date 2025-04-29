@@ -95,7 +95,7 @@ private:
     bool programLoaded = false;
     bool cpuRunning = false;
 
-    // Control Signals for Each Stage (Example, add more as needed)
+    // Control Signals for Each Stage
     bool regWrite{}; // WB Stage
     bool memRead{}; // MEM Stage
     bool memWrite{}; // MEM Stage
