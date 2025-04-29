@@ -14,24 +14,24 @@ public:
     PipelineStructure();
     ~PipelineStructure();
     struct IF_ID_Register {
-        uint32_t pc{};
+        int32_t pc{};
         Instruction instruction;
         bool valid = true;
 
         PipelineStructure::IF_ID_Register &operator=(const PipelineStructure::IF_ID_Register &other);
     } if_id;
     struct ID_EX_Register {
-        uint32_t pc{};
+        int32_t pc{};
         Instruction instruction;
-        uint32_t rs_num{};
-        uint32_t rt_num{};
-        uint32_t rd_num{};
-        uint32_t rs_value{};
-        uint32_t rt_value{};
-        uint32_t immediate{};
-        uint32_t shamt{};
-        uint32_t forwarded_rs_value{};
-        uint32_t forwarded_rt_value{};
+        int32_t rs_num{};
+        int32_t rt_num{};
+        int32_t rd_num{};
+        int32_t rs_value{};
+        int32_t rt_value{};
+        int32_t immediate{};
+        int32_t shamt{};
+        int32_t forwarded_rs_value{};
+        int32_t forwarded_rt_value{};
         bool regWrite{};
         bool memRead{};
         bool memWrite{};
@@ -48,16 +48,16 @@ public:
         PipelineStructure::ID_EX_Register &operator=(const PipelineStructure::IF_ID_Register &other);
     } id_ex;
     struct EX_MEM_Register {
-        uint32_t pc{};
+        int32_t pc{};
         Instruction instruction;
-        uint32_t rs_num{};
-        uint32_t rt_num{};
-        uint32_t rd_num{};
-        uint32_t alu_result{};
-        uint32_t rs_value{};
-        uint32_t rt_value{};
-        uint32_t shamt{};
-        uint32_t immediate{};
+        int32_t rs_num{};
+        int32_t rt_num{};
+        int32_t rd_num{};
+        int32_t alu_result{};
+        int32_t rs_value{};
+        int32_t rt_value{};
+        int32_t shamt{};
+        int32_t immediate{};
         bool regWrite{};
         bool memRead{};
         bool memWrite{};
@@ -72,17 +72,17 @@ public:
         PipelineStructure::EX_MEM_Register &operator=(const PipelineStructure::ID_EX_Register &other);
     } ex_mem;
     struct MEM_WB_Register {
-        uint32_t pc{};
+        int32_t pc{};
         Instruction instruction;
-        uint32_t rs_num{};
-        uint32_t rt_num{};
-        uint32_t rd_num{};
-        uint32_t alu_result{};
-        uint32_t memory_read_data{};
-        uint32_t write_data{};
-        uint32_t write_reg_num{};
-        uint32_t rs_value{};
-        uint32_t rt_value{};
+        int32_t rs_num{};
+        int32_t rt_num{};
+        int32_t rd_num{};
+        int32_t alu_result{};
+        int32_t memory_read_data{};
+        int32_t write_data{};
+        int32_t write_reg_num{};
+        int32_t rs_value{};
+        int32_t rt_value{};
         bool regWrite{};
         bool memToReg{};
         bool valid = true;
@@ -108,7 +108,7 @@ public:
     bool jumpTaken = false;
 
 private:
-    uint32_t pc = 0;
+    int32_t pc = 0;
 };
 
 #endif //PIPELINESTRUCTURE_H

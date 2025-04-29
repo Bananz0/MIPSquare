@@ -35,7 +35,7 @@ CPUSimulator::~CPUSimulator() {
 }
 
 std::vector<uint32_t> CPUSimulator::loadProgramFromFile() {
-    std::vector<uint32_t> MIPSProgram;
+    std::vector<int32_t> MIPSProgram;
     MipsParser parser;
     // Load and parse the assembly file into machine code
     std::vector<uint32_t> machineCode = parser.loadProgramFromFile("MIPSProgram.txt");
@@ -86,7 +86,7 @@ std::vector<uint32_t> CPUSimulator::loadProgramFromFile() {
     // return MIPSProgram;
 }
 
-void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> &memData) {
+void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> memData) {
     if constexpr (DEBUG) {
         std::cout << std::endl << "Pushing Instrictions to instructionMemory" << std::endl;
     }
@@ -94,7 +94,7 @@ void CPUSimulator::loadProgramInstructions(const std::vector<uint32_t> &memData)
     programLoaded = true;
 }
 
-void CPUSimulator::printInstructions(const std::vector<uint32_t> &instructionVector) {
+void CPUSimulator::printInstructions(const std::vector<int32_t> &instructionVector) {
     //Used mainly for testng if the read function works and it does
     std::cout << "===============================" << std::endl;
     std::cout << "Instructions Read from File" << std::endl;
@@ -122,7 +122,7 @@ void CPUSimulator::fetch() const {
     }
 
     // Get current PC value
-    uint32_t currentPC = programCounter->getPC();
+    int32_t currentPC = programCounter->getPC();
 
     // Check if we've reached the end of instruction memory
     if (currentPC >= instructionMemory->getMemory().size() * 4) {
@@ -135,7 +135,7 @@ void CPUSimulator::fetch() const {
     std::cout << "=========== CPU Fetch  =========" << std::endl;
 
     // Fetch instruction from memory
-    uint32_t instructionFetch = instructionMemory->getMemoryValue(currentPC);
+    int32_t instructionFetch = instructionMemory->getMemoryValue(currentPC);
 
 
     // Write to if_id buffer
@@ -155,7 +155,7 @@ void CPUSimulator::fetch() const {
     std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
-void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) const {
+void CPUSimulator::handleBranchHazard(bool taken, int32_t target_pc) const {
     if (taken) {
         //Update PC to branch target
         programCounter->setPC(target_pc);
@@ -216,8 +216,8 @@ void CPUSimulator::decode() const {
 
     // Extract instruction fields
     Instruction &instr = pipelineStructure->if_id.instruction;
-    uint32_t rs_value = regfile->getRegisterValue(instr.getRs());
-    uint32_t rt_value = regfile->getRegisterValue(instr.getRt());
+    int32_t rs_value = regfile->getRegisterValue(instr.getRs());
+    int32_t rt_value = regfile->getRegisterValue(instr.getRt());
 
     if constexpr (DEBUG) {
         std::cout << "\nCPU Decoding: " << instr.toString() << std::endl;
@@ -227,7 +227,7 @@ void CPUSimulator::decode() const {
 
 
     // Initialize all the values
-    uint8_t aluOp = 0;
+    int8_t aluOp = 0;
     bool aluSrc = false;
     bool regWrite = false;
     bool memRead = false;
@@ -235,7 +235,7 @@ void CPUSimulator::decode() const {
     bool memToReg = false;
     bool branch = false;
     bool jump = false;
-    uint8_t regDst = 0;
+    int8_t regDst = 0;
 
     switch (instr.getOpcode()) {
         case 0x08: //ADDI
@@ -312,16 +312,16 @@ void CPUSimulator::decode() const {
         return;
     }
     //Create a copy of these values, so we can change it later on
-    uint32_t corrected_rs_value = rs_value;
-    uint32_t corrected_rt_value = rt_value;
+    int32_t corrected_rs_value = rs_value;
+    int32_t corrected_rt_value = rt_value;
 
 
     // EX/MEM Forwarding
     if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
         bool can_forward = !(pipelineStructure->ex_mem.memToReg && pipelineStructure->ex_mem.memRead);
         //No load instruction
-        uint32_t forward_data = pipelineStructure->ex_mem.alu_result;
-        uint32_t ex_mem_dest_reg = pipelineStructure->ex_mem.rd_num;
+        int32_t forward_data = pipelineStructure->ex_mem.alu_result;
+        int32_t ex_mem_dest_reg = pipelineStructure->ex_mem.rd_num;
 
         if (can_forward) {
             // Forward to RS
@@ -338,11 +338,11 @@ void CPUSimulator::decode() const {
 
     // MEM/WB Forwarding
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
-        uint32_t wb_data = pipelineStructure->mem_wb.memToReg
+        int32_t wb_data = pipelineStructure->mem_wb.memToReg
                                ? pipelineStructure->mem_wb.memory_read_data
                                : pipelineStructure->mem_wb.alu_result;
 
-        uint32_t mem_wb_dest_reg = pipelineStructure->mem_wb.rd_num;
+        int32_t mem_wb_dest_reg = pipelineStructure->mem_wb.rd_num;
 
         // Forward to RS if needed
         if (instr.getRs() == mem_wb_dest_reg && instr.getRs() != 0) {
@@ -362,7 +362,7 @@ void CPUSimulator::decode() const {
                 << instr.getJumpTarget() << std::dec << std::endl;
 
         // Set PC directly for jumps
-        uint32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
+        int32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
         std::cout << "Jumping to address: 0x" << std::hex << jumpAddr << std::dec << std::endl;
 
         // Set the PC and flush the pipeline
@@ -438,7 +438,7 @@ void CPUSimulator::execute() {
         }
     }
 
-    uint32_t destReg = alu->getDestinationRegister(
+    int32_t destReg = alu->getDestinationRegister(
         pipelineStructure->id_ex.regDst,
         pipelineStructure->id_ex.rt_num,
         pipelineStructure->id_ex.rd_num
@@ -460,8 +460,8 @@ void CPUSimulator::execute() {
 
 
     // Get ALU inputs with forwarding
-    uint32_t aluInput1 = pipelineStructure->id_ex.rs_value;
-    uint32_t aluInput2;
+    int32_t aluInput1 = pipelineStructure->id_ex.rs_value;
+    int32_t aluInput2;
 
     // For shift instructions, use shamt field
     //I'm not actually using this but had it to test my capability and it not worky
@@ -475,17 +475,22 @@ void CPUSimulator::execute() {
         aluInput2 = pipelineStructure->id_ex.shamt;
     } else {
         // Normal ALU operation
-        aluInput2 = pipelineStructure->id_ex.aluSrc
-                        ? pipelineStructure->id_ex.immediate
-                        : pipelineStructure->id_ex.rt_value;
+        if (pipelineStructure->id_ex.aluSrc) {
+            // Sign extend the immediate value before passing it to ALU
+            uint16_t bit = pipelineStructure->id_ex.immediate;
+            int32_t sigX = (bit & 0x8000) ? (0xFFFF0000 | bit) : bit;
+            aluInput2 = sigX;
+        } else {
+            aluInput2 = pipelineStructure->id_ex.rt_value;
+        }
     }
 
     // Apply forwarding logic
-    dataForwarder(aluInput1, aluInput2);
+   dataForwarder(aluInput1, aluInput2);
 
     // Execute ALU operation
     bool branchTaken = false;
-    uint32_t aluResult = alu->execute(
+    int32_t aluResult = alu->execute(
         pipelineStructure->id_ex.aluOp,
         aluInput1,
         aluInput2,
@@ -494,7 +499,7 @@ void CPUSimulator::execute() {
     );
 
     if constexpr (DEBUG) {
-        std::cout << "ALU Result: " << std::hex << aluResult << std::dec << std::endl;
+        std::cout << "ALU Result: " << std::dec << aluResult << std::dec << std::endl;
     }
 
     // Update EX/MEM pipeline register
@@ -523,8 +528,8 @@ void CPUSimulator::execute() {
     // Handle branch instructions
     if (pipelineStructure->id_ex.branch) {
         // Get ALU inputs with forwarding (make sure these are up to date from dataForwarder)
-        uint32_t rs_value = aluInput1;
-        uint32_t rt_value = aluInput2;
+        int32_t rs_value = aluInput1;
+        int32_t rt_value = aluInput2;
 
         branchTaken = false;
 
@@ -541,7 +546,7 @@ void CPUSimulator::execute() {
 
         if (branchTaken) {
             // Calculate branch target: PC + 4 + (sign-extended immediate << 2)
-            uint32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
+            int32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
                                     (pipelineStructure->id_ex.immediate << 2);
 
             // Debug info
@@ -562,7 +567,7 @@ void CPUSimulator::execute() {
 
     // Handle jump instructions
     if (pipelineStructure->id_ex.jump && !pipelineStructure->jumpTaken) {
-        uint32_t jumpTarget;
+        int32_t jumpTarget;
 
         if (pipelineStructure->id_ex.aluOp == 0xF) {
             // JR
@@ -573,8 +578,8 @@ void CPUSimulator::execute() {
                           << ", Value: 0x" << std::hex << aluInput1 << std::dec << std::endl;
                 std::cout << "  Calculated Jump Target: 0x" << std::hex << jumpTarget << std::dec << std::endl;
             }
-        } else if (pipelineStructure->id_ex.aluOp == 0x12 || // J
-                   pipelineStructure->id_ex.aluOp == 0x13) {  // JAL
+        } else if (pipelineStructure->id_ex.aluOp == 0x20 || // J
+                   pipelineStructure->id_ex.aluOp == 0x03) {  // JAL
 
             if (pipelineStructure->id_ex.aluOp == 0x12){
                 if constexpr (DEBUG) {
@@ -587,8 +592,8 @@ void CPUSimulator::execute() {
                 }
             }
             // Jump target from J-type format: PC[31:28] | (immediate << 2)
-            uint32_t pcHigh4 = pipelineStructure->id_ex.pc & 0xF0000000;
-            uint32_t targetOffset = pipelineStructure->id_ex.instruction.getJumpTarget() << 2;
+            int32_t pcHigh4 = pipelineStructure->id_ex.pc & 0xF0000000;
+            int32_t targetOffset = pipelineStructure->id_ex.instruction.getJumpTarget() << 2;
             jumpTarget = pcHigh4 | targetOffset;
 
             if constexpr (DEBUG) {
@@ -635,9 +640,9 @@ void CPUSimulator::memoryAccess() const {
     std::cout << "=-===================================" << std::endl;
     std::cout << "=========CPU Memory Access+++++++++++" << std::endl;
 
-    uint32_t memoryData = 0;
-    uint32_t address = pipelineStructure->ex_mem.alu_result;
-    uint8_t opcode = pipelineStructure->ex_mem.instruction.getOpcode();
+    int32_t memoryData = 0;
+    int32_t address = pipelineStructure->ex_mem.alu_result;
+    int8_t opcode = pipelineStructure->ex_mem.instruction.getOpcode();
 
     // Memory read operations
     if (pipelineStructure->ex_mem.memRead) {
@@ -648,9 +653,9 @@ void CPUSimulator::memoryAccess() const {
 
             case 0x20: // LB (Load Byte)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3); // Align to word boundary
-                uint8_t byteOffset = address & 0x3; // Get byte offset within word
-                uint8_t byteData = (wordData >> (byteOffset * 8)) & 0xFF;
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3); // Align to word boundary
+                int8_t byteOffset = address & 0x3; // Get byte offset within word
+                int8_t byteData = (wordData >> (byteOffset * 8)) & 0xFF;
                 // Sign extend
                 memoryData = (byteData & 0x80) ? (0xFFFFFF00 | byteData) : byteData;
             }
@@ -658,17 +663,17 @@ void CPUSimulator::memoryAccess() const {
 
             case 0x24: // LBU (Load Byte Unsigned)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
-                uint8_t byteOffset = address & 0x3;
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
+                int8_t byteOffset = address & 0x3;
                 memoryData = (wordData >> (byteOffset * 8)) & 0xFF; // No sign extension
             }
             break;
 
             case 0x21: // LH (Load Halfword)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
-                uint8_t halfwordOffset = (address & 0x2) >> 1; // 0 for lower halfword, 1 for upper
-                uint16_t halfwordData = (wordData >> (halfwordOffset * 16)) & 0xFFFF;
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
+                int8_t halfwordOffset = (address & 0x2) >> 1; // 0 for lower halfword, 1 for upper
+                int16_t halfwordData = (wordData >> (halfwordOffset * 16)) & 0xFFFF;
                 // Sign extend
                 memoryData = (halfwordData & 0x8000) ? (0xFFFF0000 | halfwordData) : halfwordData;
             }
@@ -676,8 +681,8 @@ void CPUSimulator::memoryAccess() const {
 
             case 0x25: // LHU (Load Halfword Unsigned)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
-                uint8_t halfwordOffset = (address & 0x2) >> 1;
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
+                int8_t halfwordOffset = (address & 0x2) >> 1;
                 memoryData = (wordData >> (halfwordOffset * 16)) & 0xFFFF; // No sign extension
             }
             break;
@@ -691,7 +696,7 @@ void CPUSimulator::memoryAccess() const {
 
     // Memory write operations
     if (pipelineStructure->ex_mem.memWrite) {
-        uint32_t writeData = pipelineStructure->ex_mem.rt_value;
+        int32_t writeData = pipelineStructure->ex_mem.rt_value;
 
         switch (opcode) {
             case 0x2B: // SW
@@ -700,10 +705,10 @@ void CPUSimulator::memoryAccess() const {
 
             case 0x28: // SB (Store Byte)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
-                uint8_t byteOffset = address & 0x3;
-                uint32_t byteMask = ~(0xFF << (byteOffset * 8));
-                uint32_t newData = (wordData & byteMask) |
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
+                int8_t byteOffset = address & 0x3;
+                int32_t byteMask = ~(0xFF << (byteOffset * 8));
+                int32_t newData = (wordData & byteMask) |
                                    ((writeData & 0xFF) << (byteOffset * 8));
                 dataMemory->setMemoryValue(address & ~0x3, newData);
             }
@@ -711,10 +716,10 @@ void CPUSimulator::memoryAccess() const {
 
             case 0x29: // SH (Store Halfword)
             {
-                uint32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
-                uint8_t halfwordOffset = (address & 0x2) >> 1;
-                uint32_t halfwordMask = ~(0xFFFF << (halfwordOffset * 16));
-                uint32_t newData = (wordData & halfwordMask) |
+                int32_t wordData = dataMemory->getMemoryValue(address & ~0x3);
+                int8_t halfwordOffset = (address & 0x2) >> 1;
+                int32_t halfwordMask = ~(0xFFFF << (halfwordOffset * 16));
+                int32_t newData = (wordData & halfwordMask) |
                                    ((writeData & 0xFFFF) << (halfwordOffset * 16));
                 dataMemory->setMemoryValue(address & ~0x3, newData);
             }
@@ -795,7 +800,7 @@ void CPUSimulator::writeBack() const {
 
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
-        uint32_t writeData = pipelineStructure->mem_wb.memToReg
+        int32_t writeData = pipelineStructure->mem_wb.memToReg
                                  ? pipelineStructure->mem_wb.memory_read_data
                                  : pipelineStructure->mem_wb.alu_result;
 
@@ -824,15 +829,15 @@ bool CPUSimulator::detectLoadUseHazard() const {
     // Detect load-use hazard: when ID/EX stage contains a load instruction
     // and the next instruction (in IF/ID) uses the loaded value
     if (pipelineStructure->id_ex.memRead && pipelineStructure->if_id.valid) {
-        uint32_t rt_dest = pipelineStructure->id_ex.rt_num; // Register to be loaded into
+        int32_t rt_dest = pipelineStructure->id_ex.rt_num; // Register to be loaded into
 
         // Check if the next instruction uses this register
-        uint32_t next_rs = pipelineStructure->if_id.instruction.getRs();
-        uint32_t next_rt = pipelineStructure->if_id.instruction.getRt();
+        int32_t next_rs = pipelineStructure->if_id.instruction.getRs();
+        int32_t next_rt = pipelineStructure->if_id.instruction.getRt();
 
         // Check if this is an R-type or I-type that uses registers
         // Some opcodes like J, JAL don't use Rs or Rt
-        uint8_t opcode = pipelineStructure->if_id.instruction.getOpcode();
+        int8_t opcode = pipelineStructure->if_id.instruction.getOpcode();
         bool usesRegisters = true;
 
         // Check for J-type instructions that don't use registers
@@ -854,20 +859,23 @@ bool CPUSimulator::detectLoadUseHazard() const {
     return false;
 }
 
-void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
+void CPUSimulator::dataForwarder(int32_t &aluInput1, int32_t &aluInput2) {
     // Store original values from registers
-    uint32_t original_rs_value = pipelineStructure->id_ex.rs_value;
-    uint32_t original_rt_value = pipelineStructure->id_ex.rt_value;
+    int32_t original_rs_value = pipelineStructure->id_ex.rs_value;
+    int32_t original_rt_value = pipelineStructure->id_ex.rt_value;
 
     // Get register numbers
-    uint32_t rs_num = pipelineStructure->id_ex.rs_num;
-    uint32_t rt_num = pipelineStructure->id_ex.rt_num;
+    int32_t rs_num = pipelineStructure->id_ex.rs_num;
+    int32_t rt_num = pipelineStructure->id_ex.rt_num;
     bool aluSrc = pipelineStructure->id_ex.aluSrc;
 
     // Set initial ALU inputs
     aluInput1 = original_rs_value;
     if (aluSrc) {
-        aluInput2 = pipelineStructure->id_ex.immediate;
+        // Sign extend the immediate value
+        uint16_t bit = pipelineStructure->id_ex.immediate;
+        int32_t sigX = (bit & 0x8000) ? (0xFFFF0000 | bit) : bit;
+        aluInput2 = sigX;
     } else {
         aluInput2 = original_rt_value;
     }
@@ -880,7 +888,7 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
 
     // Check EX/MEM forwarding
     if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
-        uint32_t ex_mem_dest_reg;
+        int32_t ex_mem_dest_reg;
 
         if (pipelineStructure->ex_mem.regDst == 0) {
             ex_mem_dest_reg = pipelineStructure->ex_mem.rt_num;
@@ -914,8 +922,8 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
 
     // Check MEM/WB forwarding
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
-        uint32_t mem_wb_dest_reg = pipelineStructure->mem_wb.write_reg_num;
-        uint32_t mem_wb_value;
+        int32_t mem_wb_dest_reg = pipelineStructure->mem_wb.write_reg_num;
+        int32_t mem_wb_value;
 
         if (pipelineStructure->mem_wb.memToReg) {
             mem_wb_value = pipelineStructure->mem_wb.memory_read_data;
@@ -1052,7 +1060,7 @@ void CPUSimulator::printPipelineState() const {
                                       : "NOP") << std::endl;
 }
 
-std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
+std::string CPUSimulator::getRegisterName(const int8_t regNum) {
     static const std::string regNames[] = {
         "zero", "at", "v0", "v1", "a0", "a1", "a2", "a3",
         "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
@@ -1068,8 +1076,8 @@ std::string CPUSimulator::getRegisterName(const uint8_t regNum) {
 
 void CPUSimulator::setControlSignals(const Instruction &instr) const {
     InstructionType type = instr.getType();
-    uint8_t opcode = instr.getOpcode();
-    uint8_t funct = instr.getFunct();
+    int8_t opcode = instr.getOpcode();
+    int8_t funct = instr.getFunct();
 
     // Default values
     pipelineStructure->id_ex.regWrite = false;

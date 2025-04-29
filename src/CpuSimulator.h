@@ -30,14 +30,14 @@ public:
     ~CPUSimulator();
 
     //Load Instructions
-    void loadProgramInstructions(const std::vector<uint32_t> &memData);
-    static void printInstructions(const std::vector<uint32_t> &instructionVector);
+    void loadProgramInstructions(std::vector<uint32_t> memData);
+    static void printInstructions(const std::vector<int32_t> &instructionVector);
     [[nodiscard]] bool detectLoadUseHazard() const;
     static std::vector<uint32_t> loadProgramFromFile();
 
     //Pipeline Stages
     void fetch() const;
-    void handleBranchHazard(bool taken, uint32_t target_pc) const;
+    void handleBranchHazard(bool taken, int32_t target_pc) const;
     void decode() const;
     void execute();
     void memoryAccess() const;
@@ -49,11 +49,11 @@ public:
     // void handleHazard();
 
     //Data Forwarding
-    void dataForwarder(uint32_t &input1, uint32_t &input2);
+    void dataForwarder(int32_t &input1, int32_t &input2);
     void startCPU();
     void virtualClock();
     void printPipelineState() const;
-    static std::string getRegisterName(uint8_t regNum);
+    static std::string getRegisterName(int8_t regNum);
     void setControlSignals(const Instruction &instr) const;
     void updatePipelineRegisters() const;
 
@@ -77,11 +77,11 @@ private:
     std::unique_ptr<Multiplexer> mux1, mux2, mux3, mux4;
 
     //Pipeline Register values for data
-    uint32_t instructionFetch{};
-    uint32_t readData1{};
-    uint32_t readData2{};
-    uint32_t aluResult{};
-    uint32_t memoryReadData{};
+    int32_t instructionFetch{};
+    int32_t readData1{};
+    int32_t readData2{};
+    int32_t aluResult{};
+    int32_t memoryReadData{};
 
     //Statistics
     int instructionsExecuted = 0;

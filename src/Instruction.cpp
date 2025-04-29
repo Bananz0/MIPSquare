@@ -36,8 +36,9 @@ RegisterNumber Instruction::getDestReg() const {
     return this->rd;
 }
 
-uint32_t Instruction::getImmediate() const {
-    return static_cast<uint32_t>(this->immediate);
+int32_t Instruction::getImmediate() const {
+    // Sign extend the 16-bit immediate value to 32 bits
+    return static_cast<int32_t>(static_cast<uint16_t>(this->imm16));
 }
 
 uint32_t Instruction::getJumpTarget() const {
@@ -172,12 +173,14 @@ void Instruction::parseRawInstruction(const uint32_t raw) {
         type = InstructionType::I_Instruction;
         rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F); // Source register
         rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F); // Destination register
-        immediate = raw & 0xFFFF;
+        imm16 = raw & 0xFFFF;
+        immediate = static_cast<int32_t>(static_cast<int16_t>(imm16));
     } else {
         type = InstructionType::I_Instruction;
         rs = static_cast<RegisterNumber>((raw >> 21) & 0x1F);
         rt = static_cast<RegisterNumber>((raw >> 16) & 0x1F);
-        immediate = raw & 0xFFFF; // 16-bit immediate
+        imm16 = raw & 0xFFFF;
+        immediate = static_cast<int32_t>(static_cast<int16_t>(imm16));
     }
 
 

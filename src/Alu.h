@@ -42,9 +42,8 @@ public:
         JAL = 0x13,
         LUI = 0x14
     };
-    static uint32_t getDestinationRegister(uint8_t regDst, uint32_t rt_num, uint32_t rd_num);
-
-    uint32_t execute(uint8_t aluOp, uint32_t input1, uint32_t input2, uint32_t pc, bool &branchTaken);
+    static int32_t getDestinationRegister(uint8_t regDst, int32_t rt_num, int32_t rd_num);
+    static int32_t execute(uint8_t aluOp, int32_t input1, int32_t input2, int32_t pc, bool &branchTaken);
 };
 
 #endif // ALU_H

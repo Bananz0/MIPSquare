@@ -11,8 +11,8 @@ ALU::ALU() = default;
 
 ALU::~ALU() = default;
 
-uint32_t ALU::getDestinationRegister(uint8_t regDst, uint32_t rt_num, uint32_t rd_num) {
-    uint32_t destReg;
+int32_t ALU::getDestinationRegister(uint8_t regDst, int32_t rt_num, int32_t rd_num) {
+    int32_t destReg;
 
     switch (regDst) {
         case 0: // Use rt field
@@ -31,8 +31,8 @@ uint32_t ALU::getDestinationRegister(uint8_t regDst, uint32_t rt_num, uint32_t r
     return destReg;
 }
 
-uint32_t ALU::execute(uint8_t aluOp, uint32_t input1, uint32_t input2, uint32_t pc, bool& branchTaken) {
-    uint32_t result = 0;
+int32_t ALU::execute(uint8_t aluOp, int32_t input1, int32_t input2, int32_t pc, bool& branchTaken) {
+    int32_t result = 0;
     branchTaken = false;
 
     if constexpr (DEBUG) {
@@ -77,7 +77,7 @@ uint32_t ALU::execute(uint8_t aluOp, uint32_t input1, uint32_t input2, uint32_t 
             // C++ implementation of arithmetic shift
             if (input1 & 0x80000000) {
                 // If MSB is 1
-                uint32_t mask = ~((1 << (32 - input2)) - 1);
+                int32_t mask = ~((1 << (32 - input2)) - 1);
                 result = (input1 >> input2) | mask;
             } else {
                 result = input1 >> input2;
