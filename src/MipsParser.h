@@ -218,17 +218,25 @@ public:
                     (labelOrOffset[0] == '-' && labelOrOffset.size() > 1 && isdigit(labelOrOffset[1]))) {
                     // Direct offset
                     immediate = std::stoi(labelOrOffset);
-                } else {
-                    // It's a label, look up its address
-                    auto it = labelMap.find(labelOrOffset);
-                    if (it != labelMap.end()) {
-                        // Calculate branch offset (target - (current+1))
-                        immediate = it->second - (currentInstrIndex + 1);
                     } else {
-                        std::cerr << "Undefined label: " << labelOrOffset << std::endl;
-                        immediate = 0;
+                        // It's a label, look up its address
+                        auto it = labelMap.find(labelOrOffset);
+                        if (it != labelMap.end()) {
+                            // Calculate branch offset (target - (current+1))
+                            immediate = it->second - (currentInstrIndex + 1);
+
+                            // Debug branch target calculation
+                            if constexpr (PARSER_DEBUG) {
+                                std::cout << "Branch calculation: target = " << it->second
+                                          << ", current = " << currentInstrIndex
+                                          << ", offset = " << immediate << std::endl;
+                            }
+                        } else {
+                            std::cerr << "Undefined label: " << labelOrOffset << std::endl;
+                            immediate = 0;
+                        }
                     }
-                }
+
 
                 machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) | (immediate & 0xFFFF);
             } else {

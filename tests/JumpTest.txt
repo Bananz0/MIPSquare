@@ -1,0 +1,17 @@
+addi t0 zero 1000
+addi t1 0 4080
+addi t2 0 3070
+addi t3 0 5090
+j end           #Program should halt always after storing 5090 to t3 with a bubble
+nop
+loop:
+    beq t3 t1 done
+    addi t3 0 69
+    j loop
+done:
+    sw t2 0(t0)
+    addi t3 0 69
+    nop
+end:
+    nop
+    stop

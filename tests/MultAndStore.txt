@@ -1,0 +1,21 @@
+// Input: Hardcoded in $t1 (e.g., set $t1 = n)
+// Output: square in $s0, also stored in memory at address 0
+// This is GlenMIPS (with Rs Rt Rd encoding mismatch accounted for)
+
+addi $s0, $zero, 0    // square = 0
+addi $t0, $zero, 1    // odd = 1 (first odd number)
+addi $t1, $zero, 30    // counter = n (hardcoded, e.g., n=3 → calculates 3² = 9)
+addi $t3, $zero, 2000    // initialize memory pointer to address 0
+loop:
+    beq $t1, $zero, done  // if counter == 0, exit loop
+    add $s0, $t0, $s0     // square += odd
+    nop                   // NOP after add with 3 registers
+    addi $t0, $t0, 2      // odd += 2 (next odd number)
+    addi $t1, $t1, -1     // counter -= 1
+    j loop                // repeat loop
+done:
+    sw $s0, 0($t3)        // store the square result at memory address 0
+    nop
+    nop
+    nop
+    stop

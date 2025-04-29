@@ -544,10 +544,19 @@ void CPUSimulator::execute() {
             branchTaken = (rs_value != rt_value);
         }
 
+        // Get the branch offset
+        int32_t branchOffset = pipelineStructure->id_ex.immediate;
+
+        // Sign extend that nigga
+        if (branchOffset & 0x8000) {
+            branchOffset |= 0xFFFF0000; // Sign extend to 32 bits
+        }
+
+
         if (branchTaken) {
             // Calculate branch target: PC + 4 + (sign-extended immediate << 2)
             int32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
-                                   (pipelineStructure->id_ex.immediate << 2);
+                                   (branchOffset << 2);
 
             // Debug info
             if constexpr (DEBUG) {
@@ -759,10 +768,9 @@ void CPUSimulator::memoryAccess() const {
 
     if constexpr (DEBUG) {
         if (pipelineStructure->ex_mem.memRead) {
-            std::cout << "MEMREAD: " << std::hex << memoryData << std::dec;
+            std::cout << "MEMREAD ADDRESS: " << std::hex << address << " with value: (decimal) " << std::dec << memoryData << " MAYIHAVEYOURATTENTION " << std::endl;
         } else if (pipelineStructure->ex_mem.memWrite) {
-            std::cout << "MEMWRITE ADDRESS:" << std::hex << address << " with value: " << std::dec <<
-                    pipelineStructure->ex_mem.rt_value << " MAYIHAVEYOURATTENTION " << std::endl;
+            std::cout << "MEMWRITE ADDRESS: " << std::hex << address << " with value: (decimal) " << std::dec << pipelineStructure->ex_mem.rt_value << " MAYIHAVEYOURATTENTION " << std::endl;
         } else {
             std::cout << "No memory operation";
         }
