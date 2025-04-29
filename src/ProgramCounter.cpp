@@ -75,7 +75,7 @@ void ProgramCounter::jumpTo(const uint32_t newPC) {
 }
 
 void ProgramCounter::updatePC() {
- prevPc = currentPc;
+    prevPc = currentPc;
     currentPc = nextPc;
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {

@@ -145,11 +145,11 @@ PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator
     if (this != &other) {
         if constexpr (DEBUG) {
             std::cout << "MEM_WB COPY: pc=0x" << std::hex << other.pc << std::dec
-                      << " instr=" << other.instruction.toString()
-                      << " alu_result=0x" << std::hex << other.alu_result << std::dec
-                      << " mem_data=0x" << std::hex << other.memory_read_data << std::dec
-                      << " dest_reg=" << other.rd_num
-                      << " valid=" << other.valid << "\n";
+                    << " instr=" << other.instruction.toString()
+                    << " alu_result=0x" << std::hex << other.alu_result << std::dec
+                    << " mem_data=0x" << std::hex << other.memory_read_data << std::dec
+                    << " dest_reg=" << other.rd_num
+                    << " valid=" << other.valid << "\n";
         }
         pc = other.pc;
         instruction = other.instruction;
@@ -171,9 +171,9 @@ PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator
     const EX_MEM_Register &other) {
     if constexpr (DEBUG) {
         std::cout << "EX_MEM->MEM_WB: " << other.instruction.toString()
-                  << " regWrite=" << other.regWrite
-                  << " destReg=" << ((other.regDst == 0) ? other.rt_num : other.rd_num)
-                  << " aluResult=0x" << std::hex << other.alu_result << std::dec << "\n";
+                << " regWrite=" << other.regWrite
+                << " destReg=" << ((other.regDst == 0) ? other.rt_num : other.rd_num)
+                << " aluResult=0x" << std::hex << other.alu_result << std::dec << "\n";
     }
     pc = other.pc;
     instruction = other.instruction;
