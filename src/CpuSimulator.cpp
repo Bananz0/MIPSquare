@@ -116,6 +116,7 @@ void CPUSimulator::fetch() const {
         if constexpr (DEBUG) {
             std::cout << "Pipeline stalled due to load-use hazard in Fetch" << std::endl;
         }
+        pipelineStructure->if_id.valid = false;
         pipelineStructure->IF_Done = false;
         return;
     }
@@ -125,7 +126,7 @@ void CPUSimulator::fetch() const {
 
     // Check if we've reached the end of instruction memory
     if (currentPC >= instructionMemory->getMemory().size() * 4) {
-        pipelineStructure->if_id.valid = false; // No more valid instructions
+        pipelineStructure->if_id.valid = false;
         pipelineStructure->IF_Done = true;
         return;
     }
@@ -137,19 +138,20 @@ void CPUSimulator::fetch() const {
     uint32_t instructionFetch = instructionMemory->getMemoryValue(currentPC);
 
 
-    // Update IF/ID pipeline register
-    pipelineStructure->if_id.pc = currentPC;
-    pipelineStructure->if_id.instruction = Instruction(instructionFetch);
-    pipelineStructure->if_id.valid = true;
+    // Write to if_id buffer
+    pipelineStructure->next_if_id.pc = currentPC;
+    pipelineStructure->next_if_id.instruction = Instruction(instructionFetch);
+    pipelineStructure->next_if_id.valid = true;
+
 
     if constexpr (DEBUG) {
-        std::cout << "CPU Fetching instruction at PC: 0x" << std::hex << currentPC << std::dec
+        std::cout << "CPU fetched instruction at PC: 0x" << std::hex << currentPC << std::dec
                 << std::endl;
         std::cout << pipelineStructure->if_id.instruction.toString() << std::endl;
     }
 
     programCounter->incrementPC();
-    pipelineStructure->IF_Done = true;
+    pipelineStructure->IF_Done = pipelineStructure->if_id.valid;
     std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
@@ -159,8 +161,8 @@ void CPUSimulator::handleBranchHazard(bool taken, uint32_t target_pc) const {
         programCounter->setPC(target_pc);
 
         //Flush pipeline stages
-        pipelineStructure->if_id.valid = false; // Invalidate IF/ID
-        pipelineStructure->id_ex.valid = false; // Also invalidate ID/EX for proper flush
+        pipelineStructure->next_if_id.valid = false; // Invalidate IF/ID
+        pipelineStructure->next_id_ex.valid = false; // Also invalidate ID/EX for proper flush
 
         //Reset the pipeline stage flags for flushed instructions
         pipelineStructure->IF_Done = false;
@@ -188,7 +190,7 @@ void CPUSimulator::decode() const {
     // If there's no valid instruction in IF/ID
     if (!pipelineStructure->if_id.valid) {
         //Checks if the instruction in If/Id is a valid instruction
-        pipelineStructure->id_ex.valid = false; //If not, pass a bubble (NOP) downstream
+        pipelineStructure->next_id_ex.valid = false; //If not, pass a bubble (NOP) downstream
         pipelineStructure->ID_Done = true;
         return;
     }
@@ -201,7 +203,7 @@ void CPUSimulator::decode() const {
 
         // Make this instruction invalid so it doesn't propagate
         pipelineStructure->if_id.valid = false;
-        pipelineStructure->id_ex.valid = false;
+        pipelineStructure->next_id_ex.valid = false;
 
         const_cast<CPUSimulator*>(this)->cpuRunning = false;
 
@@ -222,8 +224,6 @@ void CPUSimulator::decode() const {
         std::cout << "Decode: reading from $" << getRegisterName(instr.getRs()) << std::endl;
         std::cout << "Decode: reading from $" << getRegisterName(instr.getRt()) << std::endl;
     }
-
-    pipelineStructure->id_ex = pipelineStructure->if_id;
 
 
     // Initialize all the values
@@ -355,54 +355,52 @@ void CPUSimulator::decode() const {
         }
     }
 
+    if (jump) {
+        std::cout << "Jump instruction detected in decode: "
+                  << instr.toString() << std::endl;
+        std::cout << "Jump target: 0x" << std::hex
+                  << instr.getJumpTarget() << std::dec << std::endl;
+
+        // Set PC directly for jumps
+        uint32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
+        std::cout << "Jumping to address: 0x" << std::hex << jumpAddr << std::dec << std::endl;
+
+        // Set the PC and flush the pipeline
+        programCounter->setPC(jumpAddr);
+        pipelineStructure->if_id.valid = false; // Invalidate fetched instruction
+
+        // Indicate jump was taken
+        pipelineStructure->jumpTaken = true;
+        std::cout << "Jump taken. PC set to: 0x" << std::hex
+                << programCounter->getPC() << std::hex << std::endl;
+    }
 
     //Updating ID/EX register
-    pipelineStructure->id_ex.pc = pipelineStructure->if_id.pc;
-    pipelineStructure->id_ex.instruction = instr;
-    pipelineStructure->id_ex.rs_num = instr.getRs();
-    pipelineStructure->id_ex.rt_num = instr.getRt();
-    pipelineStructure->id_ex.rd_num = instr.getRd();
-    pipelineStructure->id_ex.rs_value = rs_value;
-    pipelineStructure->id_ex.rt_value = rt_value;
-    pipelineStructure->id_ex.immediate = instr.getImmediate();
-    pipelineStructure->id_ex.shamt = instr.getShamt();
+    pipelineStructure->next_id_ex.pc = pipelineStructure->if_id.pc;
+    pipelineStructure->next_id_ex.instruction = instr;
+    pipelineStructure->next_id_ex.rs_num = instr.getRs();
+    pipelineStructure->next_id_ex.rt_num = instr.getRt();
+    pipelineStructure->next_id_ex.rd_num = instr.getRd();
+    pipelineStructure->next_id_ex.rs_value = corrected_rs_value; // Use corrected value
+    pipelineStructure->next_id_ex.rt_value = corrected_rt_value; // Use corrected value
+    pipelineStructure->next_id_ex.immediate = instr.getImmediate();
+    pipelineStructure->next_id_ex.shamt = instr.getShamt();
     //Control Signals
-    pipelineStructure->id_ex.memToReg = memToReg;
-    pipelineStructure->id_ex.branch = branch;
-    pipelineStructure->id_ex.jump = jump;
-    pipelineStructure->id_ex.aluOp = aluOp;
-    pipelineStructure->id_ex.aluSrc = aluSrc;
-    pipelineStructure->id_ex.regWrite = regWrite;
-    pipelineStructure->id_ex.memRead = memRead;
-    pipelineStructure->id_ex.memWrite = memWrite;
-    pipelineStructure->id_ex.regDst = regDst;
-    pipelineStructure->id_ex.valid = true;
+    pipelineStructure->next_id_ex.memToReg = memToReg;
+    pipelineStructure->next_id_ex.branch = branch;
+    pipelineStructure->next_id_ex.jump = jump;
+    pipelineStructure->next_id_ex.aluOp = aluOp;
+    pipelineStructure->next_id_ex.aluSrc = aluSrc;
+    pipelineStructure->next_id_ex.regWrite = regWrite;
+    pipelineStructure->next_id_ex.memRead = memRead;
+    pipelineStructure->next_id_ex.memWrite = memWrite;
+    pipelineStructure->next_id_ex.regDst = regDst;
+    pipelineStructure->next_id_ex.valid = true;
 
     pipelineStructure->ID_Done = true;
 
     if constexpr (DEBUG) {
         std::cout << "Decode complete - instruction moving to ID/EX stage" << std::endl;
-
-        if (jump) {
-            std::cout << "Jump instruction detected in decode: "
-                      << instr.toString() << std::endl;
-            std::cout << "Jump target: 0x" << std::hex
-                      << instr.getJumpTarget() << std::dec << std::endl;
-
-            // Set PC directly for jumps
-            uint32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
-            std::cout << "Jumping to address: 0x" << std::hex << jumpAddr << std::dec << std::endl;
-
-            // Set the PC and flush the pipeline
-            programCounter->setPC(jumpAddr);
-            pipelineStructure->if_id.valid = false; // Invalidate fetched instruction
-
-            // Indicate jump was taken
-            pipelineStructure->jumpTaken = true;
-            std::cout << "Jump taken. PC set to: 0x" << std::hex
-                      << programCounter->getPC() << std::hex << std::endl;
-        }
-
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
@@ -410,7 +408,7 @@ void CPUSimulator::decode() const {
 void CPUSimulator::execute() {
     // Only process if there's a valid instruction in ID/EX
     if (!pipelineStructure->id_ex.valid) {
-        pipelineStructure->ex_mem.valid = false;
+        pipelineStructure->next_ex_mem.valid = false;
         pipelineStructure->EX_Done = true;
         return;
     }
@@ -500,26 +498,27 @@ void CPUSimulator::execute() {
     }
 
     // Update EX/MEM pipeline register
-    pipelineStructure->ex_mem.pc = pipelineStructure->id_ex.pc;
-    pipelineStructure->ex_mem.instruction = pipelineStructure->id_ex.instruction;
-    pipelineStructure->ex_mem.rs_num = pipelineStructure->id_ex.rs_num;
-    pipelineStructure->ex_mem.rt_num = pipelineStructure->id_ex.rt_num;
-    pipelineStructure->ex_mem.rd_num = destReg; // Use calculated destination register
-    pipelineStructure->ex_mem.alu_result = aluResult;
-    pipelineStructure->ex_mem.rs_value = aluInput1; // Store forwarded values
-    pipelineStructure->ex_mem.rt_value = (pipelineStructure->id_ex.aluSrc)
-                                             ? pipelineStructure->id_ex.rt_value
-                                             : // Original rt value for store
-                                             aluInput2; // Forwarded rt value
-    pipelineStructure->ex_mem.immediate = pipelineStructure->id_ex.immediate;
+    pipelineStructure->next_ex_mem.pc = pipelineStructure->id_ex.pc;
+    pipelineStructure->next_ex_mem.instruction = pipelineStructure->id_ex.instruction;
+    pipelineStructure->next_ex_mem.rs_num = pipelineStructure->id_ex.rs_num;
+    pipelineStructure->next_ex_mem.rt_num = pipelineStructure->id_ex.rt_num;
+    pipelineStructure->next_ex_mem.rd_num = destReg; // Use calculated destination register
+    pipelineStructure->next_ex_mem.alu_result = aluResult;
+    pipelineStructure->next_ex_mem.rs_value = aluInput1; // Store forwarded values
+    pipelineStructure->next_ex_mem.rt_value = (pipelineStructure->id_ex.aluSrc)
+                                                  ? pipelineStructure->id_ex.rt_value
+                                                  : // Original rt value for store
+                                                  aluInput2; // Forwarded rt value
+    pipelineStructure->next_ex_mem.immediate = pipelineStructure->id_ex.immediate;
 
     // Pass control signals
-    pipelineStructure->ex_mem.regWrite = pipelineStructure->id_ex.regWrite;
-    pipelineStructure->ex_mem.memRead = pipelineStructure->id_ex.memRead;
-    pipelineStructure->ex_mem.memWrite = pipelineStructure->id_ex.memWrite;
-    pipelineStructure->ex_mem.memToReg = pipelineStructure->id_ex.memToReg;
-    pipelineStructure->ex_mem.jump = pipelineStructure->id_ex.jump;
-    pipelineStructure->ex_mem.valid = true;
+    pipelineStructure->next_ex_mem.regWrite = pipelineStructure->id_ex.regWrite;
+    pipelineStructure->next_ex_mem.memRead = pipelineStructure->id_ex.memRead;
+    pipelineStructure->next_ex_mem.memWrite = pipelineStructure->id_ex.memWrite;
+    pipelineStructure->next_ex_mem.memToReg = pipelineStructure->id_ex.memToReg;
+    pipelineStructure->next_ex_mem.jump = pipelineStructure->id_ex.jump;
+    pipelineStructure->next_ex_mem.valid = true;
+
 
     // Handle branch instructions
     if (pipelineStructure->id_ex.branch) {
@@ -527,7 +526,7 @@ void CPUSimulator::execute() {
         uint32_t rs_value = aluInput1;
         uint32_t rt_value = aluInput2;
 
-        bool branchTaken = false;
+        branchTaken = false;
 
         // For BEQ, branch if rs == rt
         if (pipelineStructure->id_ex.instruction.getOpcode() == 0x4) {
@@ -610,9 +609,10 @@ void CPUSimulator::execute() {
         }
         handleBranchHazard(true, jumpTarget); // Use branch hazard handler for jumps too
     }
-
     pipelineStructure->jumpTaken = false;
     pipelineStructure->EX_Done = true;
+
+
     std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
@@ -627,7 +627,7 @@ void CPUSimulator::memoryAccess() const {
     // Check if the instruction in EX/MEM is valid
     if (!pipelineStructure->ex_mem.valid) {
         // Bubble in the pipeline
-        pipelineStructure->mem_wb.valid = false;
+        pipelineStructure->next_mem_wb.valid = false;
         pipelineStructure->MEM_Done = true;
         return;
     }
@@ -741,14 +741,15 @@ void CPUSimulator::memoryAccess() const {
     }
 
     // Update MEM/WB pipeline register
-    pipelineStructure->mem_wb.pc = pipelineStructure->ex_mem.pc;
-    pipelineStructure->mem_wb.instruction = pipelineStructure->ex_mem.instruction;
-    pipelineStructure->mem_wb.rd_num = pipelineStructure->ex_mem.rd_num;
-    pipelineStructure->mem_wb.alu_result = pipelineStructure->ex_mem.alu_result;
-    pipelineStructure->mem_wb.memory_read_data = memoryData;
-    pipelineStructure->mem_wb.regWrite = pipelineStructure->ex_mem.regWrite;
-    pipelineStructure->mem_wb.memToReg = pipelineStructure->ex_mem.memToReg;
-    pipelineStructure->mem_wb.valid = true;
+    pipelineStructure->next_mem_wb.pc = pipelineStructure->ex_mem.pc;
+    pipelineStructure->next_mem_wb.instruction = pipelineStructure->ex_mem.instruction;
+    pipelineStructure->next_mem_wb.rd_num = pipelineStructure->ex_mem.rd_num;
+    pipelineStructure->next_mem_wb.alu_result = pipelineStructure->ex_mem.alu_result;
+    pipelineStructure->next_mem_wb.memory_read_data = memoryData;
+    pipelineStructure->next_mem_wb.regWrite = pipelineStructure->ex_mem.regWrite;
+    pipelineStructure->next_mem_wb.memToReg = pipelineStructure->ex_mem.memToReg;
+    pipelineStructure->next_mem_wb.valid = true;
+    pipelineStructure->MEM_Done = true;
 
     if constexpr (DEBUG) {
         std::cout << "CPU Memory Access: ";
@@ -762,7 +763,7 @@ void CPUSimulator::memoryAccess() const {
         std::cout << std::endl;
     }
 
-    pipelineStructure->MEM_Done = true;
+
     std::cout << "+++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 void CPUSimulator::writeBack() const {
@@ -780,38 +781,36 @@ void CPUSimulator::writeBack() const {
 
     std::cout << "=-===========-=======================" << std::endl;
     std::cout << "============-CPU WriteBack===========" << std::endl;
-
     if constexpr (DEBUG) {
+        // Debug MEM/WB register values
         std::cout << "MEM/WB Stage Register Values:" << std::endl;
-        std::cout << "  Instruction: " << pipelineStructure->mem_wb.instruction.toString() << std::endl;
         std::cout << "  RegWrite: " << pipelineStructure->mem_wb.regWrite << std::endl;
-        std::cout << "  DestReg: " << pipelineStructure->mem_wb.write_reg_num
-                  << " (" << getRegisterName(pipelineStructure->mem_wb.write_reg_num) << ")" << std::endl;
+        std::cout << "  RD NUM: " << pipelineStructure->mem_wb.rd_num << " (register: " << getRegisterName(
+            pipelineStructure->mem_wb.rd_num) << ")" << std::endl;
         std::cout << "  MemToReg: " << pipelineStructure->mem_wb.memToReg << std::endl;
-        std::cout << "  ALU Result: 0x" << std::hex << pipelineStructure->mem_wb.alu_result << std::dec << std::endl;
-        std::cout << "  Memory Data: 0x" << std::hex << pipelineStructure->mem_wb.memory_read_data << std::dec << std::endl;
+        std::cout << "  ALU Result: " << pipelineStructure->mem_wb.alu_result << std::endl;
+        std::cout << "  Memory Data: " << pipelineStructure->mem_wb.memory_read_data << std::endl;
     }
+
 
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
         uint32_t writeData = pipelineStructure->mem_wb.memToReg
-                             ? pipelineStructure->mem_wb.memory_read_data
-                             : pipelineStructure->mem_wb.alu_result;
+                                 ? pipelineStructure->mem_wb.memory_read_data
+                                 : pipelineStructure->mem_wb.alu_result;
 
-        // Write to register file (skip $zero)
-        if (pipelineStructure->mem_wb.write_reg_num != 0) {
-            regfile->setRegisterValue(pipelineStructure->mem_wb.write_reg_num, writeData);
+        // Write to register file
+        if (pipelineStructure->mem_wb.rd_num != 0) {
+            // Don't write to $0
+            regfile->setRegisterValue(pipelineStructure->mem_wb.rd_num, writeData);
 
             if constexpr (DEBUG) {
-                std::cout << "CPU WriteBack: Writing 0x" << std::hex << writeData << std::dec
-                          << " to $" << pipelineStructure->mem_wb.write_reg_num
-                          << " (" << getRegisterName(pipelineStructure->mem_wb.write_reg_num) << ")\n";
+                std::cout << std::endl << "CPU WriteBack: ";
+                std::cout << "Wrote " << std::hex << writeData << std::dec <<
+                        " to register $" << pipelineStructure->mem_wb.rd_num <<
+                        " (" << getRegisterName(pipelineStructure->mem_wb.rd_num) << ")" << std::endl;
             }
-        } else if constexpr (DEBUG) {
-            std::cout << "CPU WriteBack: Skipping write to $zero\n";
         }
-    } else if constexpr (DEBUG) {
-        std::cout << "CPU WriteBack: regWrite not set for this instruction\n";
     }
 
     pipelineStructure->WB_Done = true;
@@ -899,7 +898,7 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         // Forward from EX/MEM to RS
         if (ex_mem_dest_reg == rs_num && rs_num != 0) {
             // Store the forwarded value in the next register
-            pipelineStructure->next_id_ex.forwarded_rs_value = pipelineStructure->ex_mem.alu_result;
+            pipelineStructure->id_ex.forwarded_rs_value = pipelineStructure->ex_mem.alu_result;
             // Update the current ALU input for this cycle
             aluInput1 = pipelineStructure->ex_mem.alu_result;
         }
@@ -907,7 +906,7 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         // Forward from EX/MEM to RT (only if RT is used as input, i.e., aluSrc is false)
         if (ex_mem_dest_reg == rt_num && rt_num != 0 && !aluSrc) {
             // Store the forwarded value in the next register
-            pipelineStructure->next_id_ex.forwarded_rt_value = pipelineStructure->ex_mem.alu_result;
+            pipelineStructure->id_ex.forwarded_rt_value = pipelineStructure->ex_mem.alu_result;
             // Update the current ALU input for this cycle
             aluInput2 = pipelineStructure->ex_mem.alu_result;
         }
@@ -936,7 +935,7 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         if (mem_wb_dest_reg == rs_num && rs_num != 0 && !(pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
             (pipelineStructure->ex_mem.rd_num == rs_num || pipelineStructure->ex_mem.rt_num == rs_num))) {
             // Store the forwarded value in the next register
-            pipelineStructure->next_id_ex.forwarded_rs_value = mem_wb_value;
+            pipelineStructure->id_ex.forwarded_rs_value = mem_wb_value;
             // Update the current ALU input for this cycle
             aluInput1 = mem_wb_value;
         }
@@ -945,7 +944,7 @@ void CPUSimulator::dataForwarder(uint32_t &aluInput1, uint32_t &aluInput2) {
         if (mem_wb_dest_reg == rt_num && rt_num != 0 && !aluSrc && !(pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite &&
             (pipelineStructure->ex_mem.rd_num == rt_num || pipelineStructure->ex_mem.rt_num == rt_num))) {
             // Store the forwarded value in the next register
-            pipelineStructure->next_id_ex.forwarded_rt_value = mem_wb_value;
+            pipelineStructure->id_ex.forwarded_rt_value = mem_wb_value;
             // Update the current ALU input for this cycle
             aluInput2 = mem_wb_value;
         }
@@ -985,6 +984,7 @@ void CPUSimulator::startCPU() {
         execute();
         decode();
         fetch();
+        updatePipelineRegisters();
         programCounter->updatePC();
         virtualClock();
 
@@ -1119,28 +1119,27 @@ void CPUSimulator::setControlSignals(const Instruction &instr) const {
 
     // Handle jump instructions
     if (opcode == InstructionSet::J) {
-        pipelineStructure->next_id_ex.jump = true;
-        pipelineStructure->next_id_ex.aluOp = InstructionSet::J; // Use 0x2 for J
+        pipelineStructure->id_ex.jump = true;
+        pipelineStructure->id_ex.aluOp = InstructionSet::J; // Use 0x2 for J
     }
     else if (opcode == InstructionSet::JAL) {
-        pipelineStructure->next_id_ex.jump = true;
-        pipelineStructure->next_id_ex.regWrite = true;  // JAL writes to $ra
-        pipelineStructure->next_id_ex.aluOp = InstructionSet::JAL; // Use 0x3 for JAL
+        pipelineStructure->id_ex.jump = true;
+        pipelineStructure->id_ex.regWrite = true; // JAL writes to $ra
+        pipelineStructure->id_ex.aluOp = InstructionSet::JAL; // Use 0x3 for JAL
         pipelineStructure->id_ex.rd_num = 31;
     }
     // Handle branch instructions
     else if (opcode == InstructionSet::BEQ) {
-        pipelineStructure->next_id_ex.branch = true;
-        pipelineStructure->next_id_ex.aluOp = InstructionSet::BEQ; // Use 0x4 for BEQ
-    }
-    else if (opcode == InstructionSet::BNE) {
-        pipelineStructure->next_id_ex.branch = true;
-        pipelineStructure->next_id_ex.aluOp = InstructionSet::BNE; // Use 0x5 for BNE
+        pipelineStructure->id_ex.branch = true;
+        pipelineStructure->id_ex.aluOp = InstructionSet::BEQ; // Use 0x4 for BEQ
+    } else if (opcode == InstructionSet::BNE) {
+        pipelineStructure->id_ex.branch = true;
+        pipelineStructure->id_ex.aluOp = InstructionSet::BNE; // Use 0x5 for BNE
     }
 
     if (type == InstructionType::J_Instruction) {
         // J-type instructions
-        pipelineStructure->next_id_ex.aluOp = 0x2;
+        pipelineStructure->id_ex.aluOp = 0x2;
         pipelineStructure->id_ex.jump = true;
 
         if (opcode == InstructionSet::JAL) {
@@ -1154,46 +1153,148 @@ void CPUSimulator::setControlSignals(const Instruction &instr) const {
 
 void CPUSimulator::updatePipelineRegisters() const {
     Instruction nopInstr(0x0);
-    // Update pipeline registers for next cycle
+
+    if constexpr (DEBUG) {
+        std::cout << "\n=== PIPELINE REGISTER UPDATE ===" << std::endl;
+    }
+
+    // IF/ID Update
     if (!pipelineStructure->stallPipeline) {
-        // Update normal registers
-        pipelineStructure->if_id = pipelineStructure->next_if_id;
-        pipelineStructure->id_ex = pipelineStructure->next_id_ex;
-        pipelineStructure->ex_mem = pipelineStructure->next_ex_mem;
-        pipelineStructure->mem_wb = pipelineStructure->next_mem_wb;
+        if constexpr (DEBUG) {
+            std::cout << "IF/ID Update: "
+                      << (pipelineStructure->next_if_id.valid ?
+                          pipelineStructure->next_if_id.instruction.toString() : "NOP")
+                      << std::endl;
+        }
+        pipelineStructure->if_id.pc = pipelineStructure->next_if_id.pc;
+        pipelineStructure->if_id.instruction = pipelineStructure->next_if_id.instruction;
+        pipelineStructure->if_id.valid = pipelineStructure->next_if_id.valid;
+    }
+
+    // ID/EX Update
+    if (!pipelineStructure->stallPipeline) {
+        if constexpr (DEBUG) {
+            std::cout << "ID/EX Update: "
+                      << (pipelineStructure->next_id_ex.valid ?
+                          pipelineStructure->next_id_ex.instruction.toString() : "NOP")
+                      << " regWrite=" << pipelineStructure->next_id_ex.regWrite
+                      << std::endl;
+        }
+        // Copy all ID/EX fields individually
+        pipelineStructure->id_ex.pc = pipelineStructure->next_id_ex.pc;
+        pipelineStructure->id_ex.instruction = pipelineStructure->next_id_ex.instruction;
+        pipelineStructure->id_ex.rs_num = pipelineStructure->next_id_ex.rs_num;
+        pipelineStructure->id_ex.rt_num = pipelineStructure->next_id_ex.rt_num;
+        pipelineStructure->id_ex.rd_num = pipelineStructure->next_id_ex.rd_num;
+        pipelineStructure->id_ex.rs_value = pipelineStructure->next_id_ex.rs_value;
+        pipelineStructure->id_ex.rt_value = pipelineStructure->next_id_ex.rt_value;
+        pipelineStructure->id_ex.immediate = pipelineStructure->next_id_ex.immediate;
+        pipelineStructure->id_ex.shamt = pipelineStructure->next_id_ex.shamt;
+        pipelineStructure->id_ex.forwarded_rs_value = pipelineStructure->next_id_ex.forwarded_rs_value;
+        pipelineStructure->id_ex.forwarded_rt_value = pipelineStructure->next_id_ex.forwarded_rt_value;
+        // Control signals
+        pipelineStructure->id_ex.regWrite = pipelineStructure->next_id_ex.regWrite;
+        pipelineStructure->id_ex.memRead = pipelineStructure->next_id_ex.memRead;
+        pipelineStructure->id_ex.memWrite = pipelineStructure->next_id_ex.memWrite;
+        pipelineStructure->id_ex.memToReg = pipelineStructure->next_id_ex.memToReg;
+        pipelineStructure->id_ex.branch = pipelineStructure->next_id_ex.branch;
+        pipelineStructure->id_ex.jump = pipelineStructure->next_id_ex.jump;
+        pipelineStructure->id_ex.aluOp = pipelineStructure->next_id_ex.aluOp;
+        pipelineStructure->id_ex.aluSrc = pipelineStructure->next_id_ex.aluSrc;
+        pipelineStructure->id_ex.regDst = pipelineStructure->next_id_ex.regDst;
+        pipelineStructure->id_ex.valid = pipelineStructure->next_id_ex.valid;
+    }
+
+    // EX/MEM Update
+    if (!pipelineStructure->stallPipeline) {
+        if constexpr (DEBUG) {
+            std::cout << "EX/MEM Update: "
+                      << (pipelineStructure->next_ex_mem.valid ?
+                          pipelineStructure->next_ex_mem.instruction.toString() : "NOP")
+                      << " alu_result=0x" << std::hex << pipelineStructure->next_ex_mem.alu_result
+                      << " regWrite=" << pipelineStructure->next_ex_mem.regWrite
+                      << std::dec << std::endl;
+        }
+        pipelineStructure->ex_mem.pc = pipelineStructure->next_ex_mem.pc;
+        pipelineStructure->ex_mem.instruction = pipelineStructure->next_ex_mem.instruction;
+        pipelineStructure->ex_mem.rs_num = pipelineStructure->next_ex_mem.rs_num;
+        pipelineStructure->ex_mem.rt_num = pipelineStructure->next_ex_mem.rt_num;
+        pipelineStructure->ex_mem.rd_num = pipelineStructure->next_ex_mem.rd_num;
+        pipelineStructure->ex_mem.alu_result = pipelineStructure->next_ex_mem.alu_result;
+        pipelineStructure->ex_mem.rs_value = pipelineStructure->next_ex_mem.rs_value;
+        pipelineStructure->ex_mem.rt_value = pipelineStructure->next_ex_mem.rt_value;
+        pipelineStructure->ex_mem.shamt = pipelineStructure->next_ex_mem.shamt;
+        pipelineStructure->ex_mem.immediate = pipelineStructure->next_ex_mem.immediate;
+        // Control signals
+        pipelineStructure->ex_mem.regWrite = pipelineStructure->next_ex_mem.regWrite;
+        pipelineStructure->ex_mem.memRead = pipelineStructure->next_ex_mem.memRead;
+        pipelineStructure->ex_mem.memWrite = pipelineStructure->next_ex_mem.memWrite;
+        pipelineStructure->ex_mem.memToReg = pipelineStructure->next_ex_mem.memToReg;
+        pipelineStructure->ex_mem.branch = pipelineStructure->next_ex_mem.branch;
+        pipelineStructure->ex_mem.jump = pipelineStructure->next_ex_mem.jump;
+        pipelineStructure->ex_mem.regDst = pipelineStructure->next_ex_mem.regDst;
+        pipelineStructure->ex_mem.valid = pipelineStructure->next_ex_mem.valid;
+    }
+
+    if (!pipelineStructure->stallPipeline) {
+        if constexpr (DEBUG) {
+            std::cout << "MEM/WB Update: "
+                      << (pipelineStructure->next_mem_wb.valid ?
+                          pipelineStructure->next_mem_wb.instruction.toString() : "NOP")
+                      << " regWrite=" << pipelineStructure->next_mem_wb.regWrite
+                      << " destReg=" << pipelineStructure->next_mem_wb.write_reg_num
+                      << std::endl;
+        }
+        pipelineStructure->mem_wb.pc = pipelineStructure->next_mem_wb.pc;
+        pipelineStructure->mem_wb.instruction = pipelineStructure->next_mem_wb.instruction;
+        pipelineStructure->mem_wb.rs_num = pipelineStructure->next_mem_wb.rs_num;
+        pipelineStructure->mem_wb.rt_num = pipelineStructure->next_mem_wb.rt_num;
+        pipelineStructure->mem_wb.rd_num = pipelineStructure->next_mem_wb.rd_num;
+        pipelineStructure->mem_wb.alu_result = pipelineStructure->next_mem_wb.alu_result;
+        pipelineStructure->mem_wb.memory_read_data = pipelineStructure->next_mem_wb.memory_read_data;
+        pipelineStructure->mem_wb.write_data = pipelineStructure->next_mem_wb.write_data;
+        pipelineStructure->mem_wb.write_reg_num = pipelineStructure->next_mem_wb.write_reg_num;
+        pipelineStructure->mem_wb.rs_value = pipelineStructure->next_mem_wb.rs_value;
+        pipelineStructure->mem_wb.rt_value = pipelineStructure->next_mem_wb.rt_value;
+        // Control signals
+        pipelineStructure->mem_wb.regWrite = pipelineStructure->next_mem_wb.regWrite;
+        pipelineStructure->mem_wb.memToReg = pipelineStructure->next_mem_wb.memToReg;
+        pipelineStructure->mem_wb.valid = pipelineStructure->next_mem_wb.valid;
     }
 
     // Handle pipeline flushes
     if (pipelineStructure->flushPipeline) {
-        // Flush relevant pipeline stages
+        if constexpr (DEBUG) {
+            std::cout << "FLUSHING PIPELINE" << std::endl;
+        }
         pipelineStructure->if_id.instruction = nopInstr;
         pipelineStructure->if_id.valid = false;
-
         pipelineStructure->flushPipeline = false;
     }
 
-    // Reset next_if_id
+    // Reset next stage registers with debug
+    if constexpr (DEBUG) {
+        std::cout << "Resetting next stage registers to NOP" << std::endl;
+    }
+
     pipelineStructure->next_if_id.instruction = nopInstr;
     pipelineStructure->next_if_id.valid = false;
 
-    // Reset next_id_ex
     pipelineStructure->next_id_ex.instruction = nopInstr;
     pipelineStructure->next_id_ex.valid = false;
+    pipelineStructure->next_id_ex.regWrite = false;  // Explicitly clear control signals
 
-    // Reset next_ex_mem
     pipelineStructure->next_ex_mem.instruction = nopInstr;
     pipelineStructure->next_ex_mem.valid = false;
+    pipelineStructure->next_ex_mem.regWrite = false; // Explicitly clear control signals
 
-    // Reset next_mem_wb
     pipelineStructure->next_mem_wb.instruction = nopInstr;
     pipelineStructure->next_mem_wb.valid = false;
+    pipelineStructure->next_mem_wb.regWrite = false; // Explicitly clear control signals
 
-    // Reset all Done flags for next cycle
-    pipelineStructure->IF_Done = false;
-    pipelineStructure->ID_Done = false;
-    pipelineStructure->EX_Done = false;
-    pipelineStructure->MEM_Done = false;
-    pipelineStructure->WB_Done = false;
+    if constexpr (DEBUG) {
+        std::cout << "=== END PIPELINE UPDATE ===\n" << std::endl;
+    }
 }
 
 //Will manage cleaning pointers automativally hopefully
