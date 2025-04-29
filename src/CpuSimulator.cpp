@@ -311,6 +311,49 @@ void CPUSimulator::decode() const {
         pipelineStructure->ID_Done = false;
         return;
     }
+    //Create a copy of these values, so we can change it later on
+    uint32_t corrected_rs_value = rs_value;
+    uint32_t corrected_rt_value = rt_value;
+
+
+    // EX/MEM Forwarding
+    if (pipelineStructure->ex_mem.valid && pipelineStructure->ex_mem.regWrite) {
+        bool can_forward = !(pipelineStructure->ex_mem.memToReg && pipelineStructure->ex_mem.memRead);
+        //No load instruction
+        uint32_t forward_data = pipelineStructure->ex_mem.alu_result;
+        uint32_t ex_mem_dest_reg = pipelineStructure->ex_mem.rd_num;
+
+        if (can_forward) {
+            // Forward to RS
+            if (instr.getRs() == ex_mem_dest_reg && instr.getRs() != 0) {
+                corrected_rs_value = forward_data;
+            }
+
+            // Forward to RT
+            if (instr.getRt() == ex_mem_dest_reg && instr.getRt() != 0) {
+                corrected_rt_value = forward_data;
+            }
+        }
+    }
+
+    // MEM/WB Forwarding
+    if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
+        uint32_t wb_data = pipelineStructure->mem_wb.memToReg
+                               ? pipelineStructure->mem_wb.memory_read_data
+                               : pipelineStructure->mem_wb.alu_result;
+
+        uint32_t mem_wb_dest_reg = pipelineStructure->mem_wb.rd_num;
+
+        // Forward to RS if needed
+        if (instr.getRs() == mem_wb_dest_reg && instr.getRs() != 0) {
+            corrected_rs_value = wb_data;
+        }
+
+        // Forward to RT if needed
+        if (instr.getRt() == mem_wb_dest_reg && instr.getRt() != 0) {
+            corrected_rt_value = wb_data;
+        }
+    }
 
 
     //Updating ID/EX register
