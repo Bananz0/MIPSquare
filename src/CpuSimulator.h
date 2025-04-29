@@ -31,13 +31,17 @@ public:
 
     //Load Instructions
     void loadProgramInstructions(std::vector<uint32_t> memData);
+
     static void printInstructions(const std::vector<int32_t> &instructionVector);
+
     [[nodiscard]] bool detectLoadUseHazard() const;
     static std::vector<uint32_t> loadProgramFromFile();
 
     //Pipeline Stages
     void fetch() const;
+
     void handleBranchHazard(bool taken, int32_t target_pc) const;
+
     void decode() const;
     void execute();
     void memoryAccess() const;
@@ -50,9 +54,11 @@ public:
 
     //Data Forwarding
     void dataForwarder(int32_t &input1, int32_t &input2);
+
     void startCPU();
     void virtualClock();
     void printPipelineState() const;
+
     static std::string getRegisterName(int8_t regNum);
     void setControlSignals(const Instruction &instr) const;
     void updatePipelineRegisters() const;

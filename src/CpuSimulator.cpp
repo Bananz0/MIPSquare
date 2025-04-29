@@ -339,8 +339,8 @@ void CPUSimulator::decode() const {
     // MEM/WB Forwarding
     if (pipelineStructure->mem_wb.valid && pipelineStructure->mem_wb.regWrite) {
         int32_t wb_data = pipelineStructure->mem_wb.memToReg
-                               ? pipelineStructure->mem_wb.memory_read_data
-                               : pipelineStructure->mem_wb.alu_result;
+                              ? pipelineStructure->mem_wb.memory_read_data
+                              : pipelineStructure->mem_wb.alu_result;
 
         int32_t mem_wb_dest_reg = pipelineStructure->mem_wb.rd_num;
 
@@ -486,7 +486,7 @@ void CPUSimulator::execute() {
     }
 
     // Apply forwarding logic
-   dataForwarder(aluInput1, aluInput2);
+    dataForwarder(aluInput1, aluInput2);
 
     // Execute ALU operation
     bool branchTaken = false;
@@ -547,7 +547,7 @@ void CPUSimulator::execute() {
         if (branchTaken) {
             // Calculate branch target: PC + 4 + (sign-extended immediate << 2)
             int32_t branchTarget = pipelineStructure->id_ex.pc + 4 +
-                                    (pipelineStructure->id_ex.immediate << 2);
+                                   (pipelineStructure->id_ex.immediate << 2);
 
             // Debug info
             if constexpr (DEBUG) {
@@ -579,7 +579,8 @@ void CPUSimulator::execute() {
                 std::cout << "  Calculated Jump Target: 0x" << std::hex << jumpTarget << std::dec << std::endl;
             }
         } else if (pipelineStructure->id_ex.aluOp == 0x20 || // J
-                   pipelineStructure->id_ex.aluOp == 0x03) {  // JAL
+                   pipelineStructure->id_ex.aluOp == 0x03) {
+            // JAL
 
             if (pipelineStructure->id_ex.aluOp == 0x12){
                 if constexpr (DEBUG) {
@@ -709,7 +710,7 @@ void CPUSimulator::memoryAccess() const {
                 int8_t byteOffset = address & 0x3;
                 int32_t byteMask = ~(0xFF << (byteOffset * 8));
                 int32_t newData = (wordData & byteMask) |
-                                   ((writeData & 0xFF) << (byteOffset * 8));
+                                  ((writeData & 0xFF) << (byteOffset * 8));
                 dataMemory->setMemoryValue(address & ~0x3, newData);
             }
             break;
@@ -720,7 +721,7 @@ void CPUSimulator::memoryAccess() const {
                 int8_t halfwordOffset = (address & 0x2) >> 1;
                 int32_t halfwordMask = ~(0xFFFF << (halfwordOffset * 16));
                 int32_t newData = (wordData & halfwordMask) |
-                                   ((writeData & 0xFFFF) << (halfwordOffset * 16));
+                                  ((writeData & 0xFFFF) << (halfwordOffset * 16));
                 dataMemory->setMemoryValue(address & ~0x3, newData);
             }
             break;
@@ -801,8 +802,8 @@ void CPUSimulator::writeBack() const {
     // Only write back if regWrite is true
     if (pipelineStructure->mem_wb.regWrite) {
         int32_t writeData = pipelineStructure->mem_wb.memToReg
-                                 ? pipelineStructure->mem_wb.memory_read_data
-                                 : pipelineStructure->mem_wb.alu_result;
+                                ? pipelineStructure->mem_wb.memory_read_data
+                                : pipelineStructure->mem_wb.alu_result;
 
         // Write to register file
         if (pipelineStructure->mem_wb.rd_num != 0) {

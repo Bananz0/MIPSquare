@@ -54,7 +54,9 @@ public:
     [[nodiscard]] RegisterNumber getSourceReg1() const;
     [[nodiscard]] RegisterNumber getSourceReg2() const;
     [[nodiscard]] RegisterNumber getDestReg() const;
+
     [[nodiscard]] int32_t getImmediate() const;
+
     [[nodiscard]] uint32_t getJumpTarget() const;
     [[nodiscard]] uint8_t getFunct() const;
     [[nodiscard]] uint8_t getRs() const;

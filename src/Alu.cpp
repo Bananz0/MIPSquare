@@ -31,7 +31,7 @@ int32_t ALU::getDestinationRegister(uint8_t regDst, int32_t rt_num, int32_t rd_n
     return destReg;
 }
 
-int32_t ALU::execute(uint8_t aluOp, int32_t input1, int32_t input2, int32_t pc, bool& branchTaken) {
+int32_t ALU::execute(uint8_t aluOp, int32_t input1, int32_t input2, int32_t pc, bool &branchTaken) {
     int32_t result = 0;
     branchTaken = false;
 
