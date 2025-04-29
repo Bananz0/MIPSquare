@@ -15,8 +15,9 @@ public:
     OSSimulator();
     ~OSSimulator();
 
-    std::vector<int> loadProgramInstructions();
-    void printInstructions() const;
+    static std::vector<int> loadProgramInstructions();
+
+    static void printInstructions();
 
     void startSimulation() const;
 

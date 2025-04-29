@@ -33,7 +33,7 @@ std::vector<int> OSSimulator::loadProgramInstructions() {
     return {};
 }
 
-void OSSimulator::printInstructions() const {
+void OSSimulator::printInstructions() {
     // //Used mainly for testng if the read function works and it does
     // std::cout << "===============================" << std::endl;
     // std::cout << "Instructions Read from File" << std::endl;
