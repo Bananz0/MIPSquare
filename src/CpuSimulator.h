@@ -16,6 +16,7 @@
 #include <ProgramCounter.h>
 #include <chrono>
 #include <thread>
+#include "MipsParser.h"
 #include <fstream>
 
 typedef enum {
