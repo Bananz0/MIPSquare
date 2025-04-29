@@ -762,7 +762,7 @@ void CPUSimulator::memoryAccess() const {
             std::cout << "MEMREAD: " << std::hex << memoryData << std::dec;
         } else if (pipelineStructure->ex_mem.memWrite) {
             std::cout << "MEMWRITE ADDRESS:" << std::hex << address << " with value: " << std::dec <<
-                pipelineStructure->ex_mem.rt_value << " MAYIHAVEYOURATTENTION " << std::endl;
+                    pipelineStructure->ex_mem.rt_value << " MAYIHAVEYOURATTENTION " << std::endl;
         } else {
             std::cout << "No memory operation";
         }
