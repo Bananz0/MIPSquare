@@ -357,9 +357,9 @@ void CPUSimulator::decode() const {
 
     if (jump) {
         std::cout << "Jump instruction detected in decode: "
-                  << instr.toString() << std::endl;
+                << instr.toString() << std::endl;
         std::cout << "Jump target: 0x" << std::hex
-                  << instr.getJumpTarget() << std::dec << std::endl;
+                << instr.getJumpTarget() << std::dec << std::endl;
 
         // Set PC directly for jumps
         uint32_t jumpAddr = (programCounter->getPC() & 0xF0000000) | (instr.getJumpTarget() << 2);
@@ -1121,8 +1121,7 @@ void CPUSimulator::setControlSignals(const Instruction &instr) const {
     if (opcode == InstructionSet::J) {
         pipelineStructure->id_ex.jump = true;
         pipelineStructure->id_ex.aluOp = InstructionSet::J; // Use 0x2 for J
-    }
-    else if (opcode == InstructionSet::JAL) {
+    } else if (opcode == InstructionSet::JAL) {
         pipelineStructure->id_ex.jump = true;
         pipelineStructure->id_ex.regWrite = true; // JAL writes to $ra
         pipelineStructure->id_ex.aluOp = InstructionSet::JAL; // Use 0x3 for JAL
@@ -1162,9 +1161,10 @@ void CPUSimulator::updatePipelineRegisters() const {
     if (!pipelineStructure->stallPipeline) {
         if constexpr (DEBUG) {
             std::cout << "IF/ID Update: "
-                      << (pipelineStructure->next_if_id.valid ?
-                          pipelineStructure->next_if_id.instruction.toString() : "NOP")
-                      << std::endl;
+                    << (pipelineStructure->next_if_id.valid
+                            ? pipelineStructure->next_if_id.instruction.toString()
+                            : "NOP")
+                    << std::endl;
         }
         pipelineStructure->if_id.pc = pipelineStructure->next_if_id.pc;
         pipelineStructure->if_id.instruction = pipelineStructure->next_if_id.instruction;
@@ -1175,10 +1175,11 @@ void CPUSimulator::updatePipelineRegisters() const {
     if (!pipelineStructure->stallPipeline) {
         if constexpr (DEBUG) {
             std::cout << "ID/EX Update: "
-                      << (pipelineStructure->next_id_ex.valid ?
-                          pipelineStructure->next_id_ex.instruction.toString() : "NOP")
-                      << " regWrite=" << pipelineStructure->next_id_ex.regWrite
-                      << std::endl;
+                    << (pipelineStructure->next_id_ex.valid
+                            ? pipelineStructure->next_id_ex.instruction.toString()
+                            : "NOP")
+                    << " regWrite=" << pipelineStructure->next_id_ex.regWrite
+                    << std::endl;
         }
         // Copy all ID/EX fields individually
         pipelineStructure->id_ex.pc = pipelineStructure->next_id_ex.pc;
@@ -1209,11 +1210,12 @@ void CPUSimulator::updatePipelineRegisters() const {
     if (!pipelineStructure->stallPipeline) {
         if constexpr (DEBUG) {
             std::cout << "EX/MEM Update: "
-                      << (pipelineStructure->next_ex_mem.valid ?
-                          pipelineStructure->next_ex_mem.instruction.toString() : "NOP")
-                      << " alu_result=0x" << std::hex << pipelineStructure->next_ex_mem.alu_result
-                      << " regWrite=" << pipelineStructure->next_ex_mem.regWrite
-                      << std::dec << std::endl;
+                    << (pipelineStructure->next_ex_mem.valid
+                            ? pipelineStructure->next_ex_mem.instruction.toString()
+                            : "NOP")
+                    << " alu_result=0x" << std::hex << pipelineStructure->next_ex_mem.alu_result
+                    << " regWrite=" << pipelineStructure->next_ex_mem.regWrite
+                    << std::dec << std::endl;
         }
         pipelineStructure->ex_mem.pc = pipelineStructure->next_ex_mem.pc;
         pipelineStructure->ex_mem.instruction = pipelineStructure->next_ex_mem.instruction;
@@ -1239,11 +1241,12 @@ void CPUSimulator::updatePipelineRegisters() const {
     if (!pipelineStructure->stallPipeline) {
         if constexpr (DEBUG) {
             std::cout << "MEM/WB Update: "
-                      << (pipelineStructure->next_mem_wb.valid ?
-                          pipelineStructure->next_mem_wb.instruction.toString() : "NOP")
-                      << " regWrite=" << pipelineStructure->next_mem_wb.regWrite
-                      << " destReg=" << pipelineStructure->next_mem_wb.write_reg_num
-                      << std::endl;
+                    << (pipelineStructure->next_mem_wb.valid
+                            ? pipelineStructure->next_mem_wb.instruction.toString()
+                            : "NOP")
+                    << " regWrite=" << pipelineStructure->next_mem_wb.regWrite
+                    << " destReg=" << pipelineStructure->next_mem_wb.write_reg_num
+                    << std::endl;
         }
         pipelineStructure->mem_wb.pc = pipelineStructure->next_mem_wb.pc;
         pipelineStructure->mem_wb.instruction = pipelineStructure->next_mem_wb.instruction;
