@@ -758,11 +758,11 @@ void CPUSimulator::memoryAccess() const {
     pipelineStructure->MEM_Done = true;
 
     if constexpr (DEBUG) {
-        std::cout << "CPU Memory Access: ";
         if (pipelineStructure->ex_mem.memRead) {
-            std::cout << "Read data = 0x" << std::hex << memoryData << std::dec;
+            std::cout << "MEMREAD: " << std::hex << memoryData << std::dec;
         } else if (pipelineStructure->ex_mem.memWrite) {
-            std::cout << "Wrote data to address 0x" << std::hex << address;
+            std::cout << "MEMWRITE ADDRESS:" << std::hex << address << " with value: " << std::dec <<
+                pipelineStructure->ex_mem.rt_value << " MAYIHAVEYOURATTENTION " << std::endl;
         } else {
             std::cout << "No memory operation";
         }
