@@ -1,5 +1,7 @@
 // Input: Hardcoded in $t1 (e.g., set $t1 = n)
 // Output: square in $s0
+// There is a mismatch with the actual MIPS endoding. Rs Rt and Rd are mixed up but the code accounts for it.
+// This is GlenMIPS
 
 addi $s0, $zero, 0    // square = 0
 addi $t0, $zero, 1    // odd = 1 (first odd number)
@@ -7,7 +9,6 @@ addi $t1, $zero, 3    // counter = n (hardcoded, e.g., n=3 → calculates 3² = 
 loop:
     beq $t1, $zero, done  // if counter == 0, exit loop
     add $s0, $t0, $s0  // square += odd
-    nop
     nop
     addi $t0, $t0, 2   // odd += 2 (next odd number)
     addi $t1, $t1, -1  // counter -= 1
