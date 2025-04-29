@@ -9,8 +9,13 @@ PipelineStructure::PipelineStructure() = default;
 PipelineStructure::~PipelineStructure() = default;
 
 PipelineStructure::IF_ID_Register &PipelineStructure::IF_ID_Register::operator=(
-    const PipelineStructure::IF_ID_Register &other) {
+    const IF_ID_Register &other) {
+    std::cout << "IF_ID assignment operator called\n";
     if (this != &other) {
+        if constexpr (DEBUG) {
+            std::cout << "IF_ID->ID_EX COPY: pc=0x" << std::hex << other.pc << std::dec
+                    << " instr=" << other.instruction.toString() << "\n";
+        }
         pc = other.pc;
         instruction = other.instruction;
         valid = other.valid;
@@ -19,8 +24,16 @@ PipelineStructure::IF_ID_Register &PipelineStructure::IF_ID_Register::operator=(
 }
 
 PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
-    const PipelineStructure::ID_EX_Register &other) {
+    const ID_EX_Register &other) {
+    std::cout << "ID_EX assignment operator called\n";
     if (this != &other) {
+        if constexpr (DEBUG) {
+            std::cout << "ID_EX COPY: pc=0x" << std::hex << other.pc << std::dec
+                    << " instr=" << other.instruction.toString()
+                    << " rs=" << other.rs_num << "(" << other.rs_value << ")"
+                    << " rt=" << other.rt_num << "(" << other.rt_value << ")"
+                    << " valid=" << other.valid << "\n";
+        }
         pc = other.pc;
         instruction = other.instruction;
         rs_num = other.rs_num;
@@ -47,7 +60,11 @@ PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
 }
 
 PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
-    const PipelineStructure::IF_ID_Register &other) {
+    const IF_ID_Register &other) {
+    if constexpr (DEBUG) {
+        std::cout << "IF_ID->ID_EX COPY: pc=0x" << std::hex << other.pc << std::dec
+                << " instr=" << other.instruction.toString() << "\n";
+    }
     pc = other.pc;
     instruction = other.instruction;
     valid = other.valid;
@@ -56,13 +73,22 @@ PipelineStructure::ID_EX_Register &PipelineStructure::ID_EX_Register::operator=(
     rd_num = instruction.getRd();
     immediate = instruction.getImmediate();
     shamt = instruction.getShamt();
+    forwarded_rs_value = 0;
+    forwarded_rt_value = 0;
     return *this;
 }
 
 
 PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator=(
-    const PipelineStructure::EX_MEM_Register &other) {
+    const EX_MEM_Register &other) {
     if (this != &other) {
+        if constexpr (DEBUG) {
+            std::cout << "EX_MEM COPY: pc=0x" << std::hex << other.pc << std::dec
+                    << " instr=" << other.instruction.toString()
+                    << " alu_result=0x" << std::hex << other.alu_result << std::dec
+                    << " dest_reg=" << other.rd_num
+                    << " valid=" << other.valid << "\n";
+        }
         pc = other.pc;
         instruction = other.instruction;
         rs_num = other.rs_num;
@@ -86,7 +112,11 @@ PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator
 }
 
 PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator=(
-    const PipelineStructure::ID_EX_Register &other) {
+    const ID_EX_Register &other) {
+    if constexpr (DEBUG) {
+        std::cout << "ID_EX->EX_MEM COPY: pc=0x" << std::hex << other.pc << std::dec
+                << " instr=" << other.instruction.toString() << "\n";
+    }
     pc = other.pc;
     instruction = other.instruction;
     rs_num = other.rs_num;
@@ -99,17 +129,28 @@ PipelineStructure::EX_MEM_Register &PipelineStructure::EX_MEM_Register::operator
     regWrite = other.regWrite;
     memRead = other.memRead;
     memWrite = other.memWrite;
+    regWrite = other.regWrite;
     memToReg = other.memToReg;
     branch = other.branch;
     jump = other.jump;
     regDst = other.regDst;
     valid = other.valid;
+    alu_result = 0;
     return *this;
 }
 
 PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator=(
-    const PipelineStructure::MEM_WB_Register &other) {
+    const MEM_WB_Register &other) {
+    std::cout << "MEM_WB assignment operator called\n";
     if (this != &other) {
+        if constexpr (DEBUG) {
+            std::cout << "MEM_WB COPY: pc=0x" << std::hex << other.pc << std::dec
+                      << " instr=" << other.instruction.toString()
+                      << " alu_result=0x" << std::hex << other.alu_result << std::dec
+                      << " mem_data=0x" << std::hex << other.memory_read_data << std::dec
+                      << " dest_reg=" << other.rd_num
+                      << " valid=" << other.valid << "\n";
+        }
         pc = other.pc;
         instruction = other.instruction;
         rs_num = other.rs_num;
@@ -127,13 +168,22 @@ PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator
 }
 
 PipelineStructure::MEM_WB_Register &PipelineStructure::MEM_WB_Register::operator=(
-    const PipelineStructure::EX_MEM_Register &other) {
+    const EX_MEM_Register &other) {
+    if constexpr (DEBUG) {
+        std::cout << "EX_MEM->MEM_WB: " << other.instruction.toString()
+                  << " regWrite=" << other.regWrite
+                  << " destReg=" << ((other.regDst == 0) ? other.rt_num : other.rd_num)
+                  << " aluResult=0x" << std::hex << other.alu_result << std::dec << "\n";
+    }
     pc = other.pc;
     instruction = other.instruction;
     rs_num = other.rs_num;
     rt_num = other.rt_num;
     rd_num = other.rd_num;
     alu_result = other.alu_result;
+    memory_read_data = 0;
+    write_data = other.rt_value;
+    write_reg_num = (other.regDst == 0) ? other.rt_num : other.rd_num;
     rs_value = other.rs_value;
     rt_value = other.rt_value;
     regWrite = other.regWrite;

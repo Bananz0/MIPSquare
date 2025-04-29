@@ -108,7 +108,7 @@ std::string Instruction::toString() const {
         case InstructionType::J_Instruction:
             ss << "J-type, Opcode: 0x" << std::hex << static_cast<int>(opcode)
                     << ", jumpTarget: 0x" << jumpTarget
-               << std::dec;
+               << std::hex;
             break;
 
         case InstructionType::Uninitialized:

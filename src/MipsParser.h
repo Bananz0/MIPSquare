@@ -122,7 +122,7 @@ public:
             return 0x00000000;
         }
 
-        if (opName == "halt") {
+        if (opName == "stop") {
             return 0xFFFFFFFF;
         }
 

@@ -53,8 +53,8 @@ public:
     void virtualClock();
     void printPipelineState() const;
     static std::string getRegisterName(uint8_t regNum);
-
     void setControlSignals(const Instruction &instr) const;
+    void updatePipelineRegisters() const;
 
 private:
     //CPU Clock

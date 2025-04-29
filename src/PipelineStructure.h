@@ -105,6 +105,7 @@ public:
 
     bool stallPipeline = false;
     bool flushPipeline = false;
+    bool jumpTaken = false;
 private:
     uint32_t pc = 0;
 };

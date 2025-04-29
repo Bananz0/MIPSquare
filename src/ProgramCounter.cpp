@@ -13,9 +13,9 @@ ProgramCounter::ProgramCounter() : currentPc(0), nextPc(0), prevPc(0) {
 ProgramCounter::~ProgramCounter() = default;
 
 uint32_t ProgramCounter::getPC() const {
-    if constexpr (PC_DEBUG) {
-        std::cout << "Current PC accessed." << std::endl;
-    }
+    // if constexpr (PC_DEBUG) {
+    //     std::cout << "Current PC accessed." << std::endl;
+    // }
     return currentPc;
 }
 
@@ -25,7 +25,7 @@ void ProgramCounter::setPC(const uint32_t newPC) {
             std::cout << "Program Counter manually set to " << newPC << " from " << currentPc << std::endl;
         }
     }
-    nextPc = newPC;
+    currentPc = newPC;
 }
 
 void ProgramCounter::incrementPC() {
@@ -71,10 +71,11 @@ void ProgramCounter::jumpTo(const uint32_t newPC) {
         }
     }
     nextPc = newPC;
+    updatePC();
 }
 
 void ProgramCounter::updatePC() {
-    prevPc = currentPc;
+ prevPc = currentPc;
     currentPc = nextPc;
     if constexpr (DEBUG) {
         if constexpr (PC_VERBOSE) {

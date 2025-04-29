@@ -18,8 +18,8 @@
 #define PIPELINE_DEBUG 1
 #define ALU_DEBUG 1
 #define CONTROL_DEBUG 1
-#define PC_VERBOSE 0
-#define PC_DEBUG 0
+#define PC_VERBOSE 1
+#define PC_DEBUG 1
 #define PARSER_DEBUG 1
 #define CLOCK_FREQUENCY 1
 
