@@ -1,0 +1,6 @@
+// RAW hazard test (no nops)
+addi t0, zero, 5       // t0 = 5
+addi t1, t0, 10       // t1 = t0 + 10 (RAW hazard) on t1
+nop
+nop
+sw   t1, 0(t0)         // Store t1 with bubbles

@@ -1,17 +1,15 @@
-addi t0 zero 1000
+i t0 zero 1000
 addi t1 0 4080
 addi t2 0 3070
 addi t3 0 5090
-j end           #Program should halt always after storing 5090 to t3 with a bubble
-nop
+j loop                  // Program should halt always after storing 5090 to t3 with a bubble
 loop:
     beq t3 t1 done
-    addi t3 0 69
+    addi t1 t1 101      // Should Loop 10 times
     j loop
 done:
-    sw t2 0(t0)
-    addi t3 0 69
-    nop
+    sw t1 0(t0)         // Stores the new value of t1 which was initiallly 4080 to memory.
+    addi t3 0 69        // Visible with "MAYIHAVEYOURATTENTION" in console trace.
+    j end
 end:
-    nop
     stop

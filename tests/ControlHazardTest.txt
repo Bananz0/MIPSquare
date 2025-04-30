@@ -1,0 +1,9 @@
+// Branch delay slot test
+addi t0, zero, 10
+beq  t0, t0, target   // Always taken
+addi t1, zero, 1       // Should execute (delay slot)
+j    fail
+target:
+  addi t2, zero, 99    // Verify branch taken
+fail:
+  stop
