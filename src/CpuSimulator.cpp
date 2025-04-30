@@ -1032,10 +1032,10 @@ void CPUSimulator::startCPU() {
                 printf("Cycle: %d, PC: 0x%x\n", cyclesExecuted, programCounter->getPC());
                     printPipelineState();
                     std::cout << "Stage flags: IF=" << pipelineStructure->IF_Done
-                            << " ID=" << pipelineStructure->ID_Done
-                            << " EX=" << pipelineStructure->EX_Done
-                            << " MEM=" << pipelineStructure->MEM_Done
-                            << " WB=" << pipelineStructure->WB_Done << std::endl;
+                        << " ID=" << pipelineStructure->ID_Done
+                        << " EX=" << pipelineStructure->EX_Done
+                        << " MEM=" << pipelineStructure->MEM_Done
+                        << " WB=" << pipelineStructure->WB_Done << std::endl;
             }
 
             // Termination conditions
