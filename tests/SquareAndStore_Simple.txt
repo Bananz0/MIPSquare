@@ -9,7 +9,7 @@ addi $t1, $zero, 30    // counter = n (hardcoded, e.g., n=3 → calculates 3² =
 addi $t3, $zero, 2000    // initialize memory pointer to address 0
 loop:
     beq $t1, $zero, done  // if counter == 0, exit loop
-    add $t0, $s0, $s0     // square += odd
+    add $s0, $s0, $t0     // square += odd
     nop                   // NOP after add with 3 registers
     addi $t0, $t0, 2      // odd += 2 (next odd number)
     addi $t1, $t1, -1     // counter -= 1

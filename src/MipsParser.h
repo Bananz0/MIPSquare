@@ -173,8 +173,8 @@ public:
                 int rt = getRegisterNumber(reg2Str);
                 int rd = getRegisterNumber(reg3Str);
 
-                machineCode = (format.opcode << 26) | (rd << 21) | (rs << 16) |
-                              (rt << 11) | (0 << 6) | format.funct;
+                machineCode = (format.opcode << 26) | (rs << 21) | (rt << 16) |
+                              (rd << 11) | (0 << 6) | format.funct;
             }
         } else if (format.type == InstructionType::I_Instruction) {
             if (opName == "lw" || opName == "sw") {
