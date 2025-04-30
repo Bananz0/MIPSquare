@@ -17,18 +17,11 @@ addi t3 0 100
 j loop
 done:
     sw t1 0(t0)     // Should store the value 100 to the mem[600/4]
-    nop
-    nop
-    nop
     lw t4 0(t0)
-    nop
-    nop
-    nop
     j end
 loop:
     beq t3 t1 done
     addi t1 t1 1
     j loop
 end:
-    nop
     stop

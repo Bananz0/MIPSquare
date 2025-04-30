@@ -94,6 +94,8 @@ private:
     int cyclesExecuted = 0;
     bool programLoaded = false;
     bool cpuRunning = false;
+    bool drainPipelineMode = false;
+
 
     // Control Signals for Each Stage
     bool regWrite{}; // WB Stage
