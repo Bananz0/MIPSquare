@@ -3,78 +3,31 @@
 // Memory layout: squares stored consecutively starting at address 2000
 
     addi $t3, $zero, 2000    // Initialize memory pointer (start address for squares)
-        nop
-        nop
-        nop
     addi $t4, $zero, 0       // Initialize current number to square (n = 0)
-        nop
-        nop
-        nop
-    addi $t5, $zero, 3     // Set loop limit (0-200 inclusive = 201 numbers)
-        nop
-        nop
-        nop
+    addi $t5, $zero, 201     // Set loop limit (0-200 inclusive = 201 numbers)
     j main_loop
 
 main_loop:
     beq $t4, $t5, done       // If we've processed all numbers (0-200), exit
-        nop
-        nop
-        nop
-
     // Calculate square of current number (n in $t4)
     addi $s0, $zero, 0       // Initialize square result to 0
-     nop
-                                                                 nop
-                                                                 nop
     addi $t0, $zero, 1       // Initialize first odd number (1)
-        nop
-        nop
-        nop
     add $t4, $zero, $t1      // Set counter to current n (copied from $t4)
-        nop
-        nop
-        nop
+    nop
+    nop
 
-square_loop:
-    nop
-    nop
-    nop
-    beq $t1, $zero, store_result  // When counter reaches 0, we have the square
-        nop
-        nop
-        nop
-    add $t0, $s0, $s0        // square += odd
-        nop
-        nop
-        nop
-    addi $t0, $t0, 2         // odd += 2 (next odd number)
-        nop
-        nop
-        nop
-    addi $t1, $t1, -1        // counter -= 1
-        nop
-        nop
-        nop
-    j square_loop
+    square_loop:
+        beq $t1, $zero, store_result  // When counter reaches 0, we have the square
+        add $t0, $s0, $s0        // square += odd
+        addi $t0, $t0, 2         // odd += 2 (next odd number)
+        addi $t1, $t1, -1        // counter -= 1
+        j square_loop
 
-store_result:
-    nop
-    nop
-    nop
-    sw $s0, 0($t3)           // Store current square in memory
-        nop
-        nop
-        nop
-    addi $t3, $t3, 4         // Increment memory pointer by 4 (next word address)
-        nop
-        nop
-        nop
-    addi $t4, $t4, 1         // Increment current number (n += 1)
-        nop
-        nop
-        nop
-    j main_loop              // Process next number
+    store_result:
+        sw $s0, 0($t3)           // Store current square in memory
+        addi $t3, $t3, 4         // Increment memory pointer by 4 (next word address)
+        addi $t4, $t4, 1         // Increment current number (n += 1)
+        j main_loop              // Process next number
 
 done:
     stop                     // Halt the processor
