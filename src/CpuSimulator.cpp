@@ -991,69 +991,70 @@ void CPUSimulator::startCPU() {
 
     while (cpuRunning) {
         // In your main simulation loop
-            // Check if we're in drain mode (stop was detected)
-            if (drainPipelineMode) {
-                // Don't fetch new instructions, but continue executing
-                // current instructions in the pipeline
-                // If all pipeline stages are empty, then stop
-                if (!pipelineStructure->if_id.valid &&
-                    !pipelineStructure->id_ex.valid &&
-                    !pipelineStructure->ex_mem.valid &&
-                    !pipelineStructure->mem_wb.valid) {
-                    cpuRunning = false;
-                    return;
-                    }
+        // Check if we're in drain mode (stop was detected)
+        if (drainPipelineMode) {
+            // Don't fetch new instructions, but continue executing
+            // current instructions in the pipeline
+            // If all pipeline stages are empty, then stop
+            if (!pipelineStructure->if_id.valid &&
+                !pipelineStructure->id_ex.valid &&
+                !pipelineStructure->ex_mem.valid &&
+                !pipelineStructure->mem_wb.valid) {
+                cpuRunning = false;
+                return;
+            }
 
-                // Execute existing pipeline stages in reverse
-                writeBack();  // WB stage
-                memoryAccess();     // MEM stage
-                execute();    // EX stage
-                decode();     // ID stage
-                // Skip fetch to stop injecting new instructions
+            // Execute existing pipeline stages in reverse
+            writeBack(); // WB stage
+            memoryAccess(); // MEM stage
+            execute(); // EX stage
+            decode(); // ID stage
+            // Skip fetch to stop injecting new instructions
 
-                updatePipelineRegisters();
-            } else {
-                cyclesExecuted++;
-                std::cout <<
-                        "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART"
-                        << std::endl;
-                // Execute pipeline stages in reverse order to avoid overwriting data
-                // Stages that depend on previous stages should go first
-                writeBack(); // Stage 5 - doesn't depend on other stages in the current cycle
-                memoryAccess();
-                execute();
-                decode();
-                fetch();
-                updatePipelineRegisters();
-                programCounter->updatePC();
-                virtualClock();
+            updatePipelineRegisters();
+        } else {
+            cyclesExecuted++;
+            std::cout <<
+                    "CYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTARTCYCLESTART"
+                    << std::endl;
+            // Execute pipeline stages in reverse order to avoid overwriting data
+            // Stages that depend on previous stages should go first
+            writeBack(); // Stage 5 - doesn't depend on other stages in the current cycle
+            memoryAccess();
+            execute();
+            decode();
+            fetch();
+            updatePipelineRegisters();
+            programCounter->updatePC();
+            virtualClock();
 
-                if constexpr (DEBUG) {
-                    printf("Cycle: %d, PC: 0x%x\n", cyclesExecuted, programCounter->getPC());
+            if constexpr (DEBUG) {
+                printf("Cycle: %d, PC: 0x%x\n", cyclesExecuted, programCounter->getPC());
                     printPipelineState();
                     std::cout << "Stage flags: IF=" << pipelineStructure->IF_Done
-                              << " ID=" << pipelineStructure->ID_Done
-                              << " EX=" << pipelineStructure->EX_Done
-                              << " MEM=" << pipelineStructure->MEM_Done
-                              << " WB=" << pipelineStructure->WB_Done << std::endl;
-                }
-
-                // Termination conditions
-                bool noMoreInstructions = programCounter->getPC() >= instructionMemory->getMemory().size() * 4;
-                bool pipelineEmpty = !pipelineStructure->if_id.valid &&
-                                     !pipelineStructure->id_ex.valid &&
-                                     !pipelineStructure->ex_mem.valid &&
-                                     !pipelineStructure->mem_wb.valid;
-
-                if (noMoreInstructions && pipelineEmpty) {
-                    std::cout << "Program completed. All instructions processed. CPU stopping." << std::endl;
-                    cpuRunning = false;
-                }
-
-                std::cout << "CYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEEND" << std::endl;
+                            << " ID=" << pipelineStructure->ID_Done
+                            << " EX=" << pipelineStructure->EX_Done
+                            << " MEM=" << pipelineStructure->MEM_Done
+                            << " WB=" << pipelineStructure->WB_Done << std::endl;
             }
-        }
 
+            // Termination conditions
+            bool noMoreInstructions = programCounter->getPC() >= instructionMemory->getMemory().size() * 4;
+            bool pipelineEmpty = !pipelineStructure->if_id.valid &&
+                                 !pipelineStructure->id_ex.valid &&
+                                 !pipelineStructure->ex_mem.valid &&
+                                 !pipelineStructure->mem_wb.valid;
+
+            if (noMoreInstructions && pipelineEmpty) {
+                std::cout << "Program completed. All instructions processed. CPU stopping." << std::endl;
+                cpuRunning = false;
+            }
+
+            std::cout <<
+                    "CYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEENDCYCLEEND"
+                    << std::endl;
+        }
+    }
 }
 
 void CPUSimulator::virtualClock() {
