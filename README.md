@@ -73,7 +73,7 @@ MEM/WB → EX stage (for late-arriving data)
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/Bananz0/MIPSquare
 cd MIPSquare++
 
 # Create build directory
